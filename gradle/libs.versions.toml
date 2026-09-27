@@ -5,6 +5,12 @@
 # latest stable. Versions in training data go stale fast. Stable only on `main`
 # (no EAP / RC / Beta). The Kotlin pin is bounded above by SKIE's supported
 # range — do not bump Kotlin past what SKIE supports.
+#
+# NAMING: every key, in every section, is lowercase kebab-case. Dashes become
+# nested accessors (`android-compile-sdk` → libs.versions.android.compile.sdk),
+# so a key must never be a whole-segment prefix of another: adding
+# `ktlint-gradle` beside `ktlint` turns libs.versions.ktlint into a group and
+# breaks `.get()`. Name siblings by artifact instead (ktlint-cli, ktlint-gradle).
 # =============================================================================
 
 [versions]
@@ -28,7 +34,7 @@ dokka = "2.2.0"                # Kotlin API doc generator; Dokka v2 task layout.
 # community-recommended path. Coexists with KMMBridge — each plugin owns its
 # own repository (vanniktech adds mavenCentral, KMMBridge adds GitHubPackages)
 # and its own publish-umbrella task, so there's no cross-contamination.
-mavenPublish = "0.37.0"
+maven-publish = "0.37.0"
 
 # --- Android SDK ------------------------------------------------------------
 # compileSdk 37 is forced, not chosen: the Android sample's lifecycle 2.11.0 (and
@@ -68,8 +74,8 @@ androidx-compose-bom = "2026.06.01"
 turbine = "1.2.1"
 
 # --- Lint ------------------------------------------------------------------
-ktlint = "1.8.0"               # The ktlint tool itself.
-ktlintGradle = "14.2.0"        # The org.jlleitschuh.gradle.ktlint Gradle plugin.
+ktlint-cli = "1.8.0"           # The ktlint tool itself (com.pinterest.ktlint:ktlint-cli).
+ktlint-gradle = "14.2.0"       # The org.jlleitschuh.gradle.ktlint Gradle plugin.
 # detekt 1.23.8 is the latest stable; the 2.x line is alpha-only as of
 # June 2026 and CLAUDE.md §2 bans pre-stable on main.
 detekt = "1.23.8"
@@ -98,7 +104,7 @@ android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref
 # hard-coding Touchlab's internal artifact name.
 skie-gradle-plugin = { module = "co.touchlab.skie:co.touchlab.skie.gradle.plugin", version.ref = "skie" }
 dokka-gradle-plugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
-vanniktech-maven-publish-gradle-plugin = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "mavenPublish" }
+vanniktech-maven-publish-gradle-plugin = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "maven-publish" }
 
 # --- Testing ----------------------------------------------------------------
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
@@ -125,7 +131,7 @@ android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.
 android-application = { id = "com.android.application", version.ref = "agp" }
 skie = { id = "co.touchlab.skie", version.ref = "skie" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
-ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 # kmmbridge-github — applied in reachable/build.gradle.kts. Publishes the
 # SKIE-enhanced Reachable.xcframework zip as a GitHub *Release* asset (public,
@@ -139,4 +145,4 @@ kmmbridge-github = { id = "co.touchlab.kmmbridge.github", version.ref = "kmmbrid
 # Vanniktech Maven Publish — Maven Central Portal upload + GPG signing + sources/
 # javadoc jars + POM-metadata DSL. See `mavenPublishing { }` in
 # reachable/build.gradle.kts for the configuration.
-maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
+maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }

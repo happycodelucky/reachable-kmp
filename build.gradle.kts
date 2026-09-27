@@ -48,7 +48,7 @@ subprojects {
 
     plugins.withId("org.jlleitschuh.gradle.ktlint") {
         configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-            version.set(libs.versions.ktlint.get())
+            version.set(libs.versions.ktlint.cli.get())
             android.set(false)
             outputToConsole.set(true)
             ignoreFailures.set(false)
