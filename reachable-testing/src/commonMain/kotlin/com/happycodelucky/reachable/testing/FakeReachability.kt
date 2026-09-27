@@ -77,9 +77,7 @@ import kotlin.native.ObjCName
  */
 @OptIn(ExperimentalObjCName::class)
 @ObjCName(name = "ReachableFakeReachability", swiftName = "FakeReachability")
-public class FakeReachability(
-    initial: ReachabilityStatus = ReachabilityStatus.Unknown,
-) : StateFlowReachability() {
+public class FakeReachability(initial: ReachabilityStatus = ReachabilityStatus.Unknown) : StateFlowReachability() {
     private val _closeCallCount = atomic(0)
 
     /**

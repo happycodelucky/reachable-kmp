@@ -157,10 +157,7 @@ internal class AndroidReachability internal constructor() : StateFlowReachabilit
 
     private fun makeCallback(): ConnectivityManager.NetworkCallback =
         object : ConnectivityManager.NetworkCallback() {
-            override fun onCapabilitiesChanged(
-                network: Network,
-                capabilities: NetworkCapabilities,
-            ) {
+            override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
                 publish(toStatus(capabilities))
             }
 

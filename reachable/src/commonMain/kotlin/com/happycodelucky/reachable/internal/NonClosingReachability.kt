@@ -44,9 +44,7 @@ import kotlinx.coroutines.flow.StateFlow
  * idempotent-close contract — they're the right tool for tests and any
  * call site that wants explicit teardown.
  */
-internal class NonClosingReachability(
-    private val delegate: Reachability,
-) : Reachability {
+internal class NonClosingReachability(private val delegate: Reachability) : Reachability {
     override val status: StateFlow<ReachabilityStatus>
         get() = delegate.status
 

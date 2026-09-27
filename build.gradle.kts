@@ -67,6 +67,8 @@ subprojects {
     plugins.withId("io.gitlab.arturbosch.detekt") {
         configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
             buildUponDefaultConfig = true
+            // Project overrides layered on the defaults live in config/detekt.
+            config.setFrom(rootProject.files("config/detekt/detekt.yml"))
             // detekt's default source resolution only knows JVM layouts
             // (src/main/kotlin); point it at the module root so every KMP
             // source set (commonMain, appleMain, androidHostTest, …) is

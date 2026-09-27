@@ -1,0 +1,10 @@
+# Reachable — detekt overrides, layered on buildUponDefaultConfig = true.
+#
+# Everything not listed here stays at detekt's defaults (CLAUDE.md §3: detekt
+# must pass). Each override carries a one-line reason.
+
+style:
+  MaxLineLength:
+    # ktlint enforces the line length from the root .editorconfig (120), the
+    # single place the number lives; a second copy here could drift from it.
+    active: false
