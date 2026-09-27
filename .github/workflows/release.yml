@@ -292,7 +292,7 @@ jobs:
       # jars and detached GPG signatures.
       # Both publish tasks also generate each module's llms.txt +
       # llms-full.txt from Dokka and pack them into every jar and the AAR,
-      # stamped with RELEASE_VERSION (reachable.publish; LESSONS D-005).
+      # stamped with RELEASE_VERSION (reachable.publish; LESSONS D-011).
       - name: Publish to Maven Central (dry run — staging only)
         if: env.DRY_RUN == 'true'
         env:

@@ -26,13 +26,11 @@ Rules for working in this repo. Read before starting any task.
 
 Use the **latest stable**. Never EAP, RC, or beta on `main`. All versions live in `gradle/libs.versions.toml`.
 
-Floors as of last edit:
-
-- Kotlin 2.3.21
-- Gradle 9.x
-- AGP 9.x with `com.android.kotlin.multiplatform.library` (use the new `android` block, not `androidTarget`)
-- JVM target 21
-- Latest stable Xcode that the current Kotlin release supports
+- Kotlin, SKIE, Gradle, AGP: whatever the catalog (and `gradle/wrapper/gradle-wrapper.properties`) says — read them there rather than trusting a number quoted in prose. The Kotlin pin is bounded above by SKIE (Section 8).
+- AGP 9.x with `com.android.kotlin.multiplatform.library` (use the new `android` block, not `androidTarget`).
+- JVM bytecode target 21 — the catalog's `jvm-target`, set explicitly on the android + jvm targets by the convention plugin, never inherited from the build JDK (LESSONS B-003). Build JDK 21 (mise) — not 25 until detekt 2.x is stable (LESSONS T-003).
+- Android consumers compile against at least `android-min-compile-sdk` — the AAR's declared `minCompileSdk` (LESSONS B-002) — not our `compileSdk`, which the sample's AndroidX deps set.
+- Latest stable Xcode that the current Kotlin release supports.
 
 **Before adding or bumping any dependency: web-search the latest stable version.** Versions in your training data are stale. Don't guess.
 
@@ -73,6 +71,7 @@ Everything else we author — classes, files, top-level functions, top-level `va
 - `kotlinx.coroutines` only. Every `CoroutineScope` has a clear owner with a defined cancellation lifecycle. The library's per-platform schedulers and the iOS coroutine bridge each own a `SupervisorJob`-rooted scope; `Backgrounder.shutdown()` is the documented cancellation handle. There are no top-level scopes.
 - No `GlobalScope`. Ever.
 - `Flow`/`StateFlow`/`SharedFlow` over callbacks and `LiveData`.
+- Expose state with an **explicit backing field** (stable since Kotlin 2.4), not a `_state`/`state` pair: `val state: StateFlow<S>` + `field = MutableStateFlow(initial)` on the next line; inside the class `state.value = …` smart-casts to the mutable type. Swift sees only the read-only `StateFlow` (SKIE: `SkieKotlinStateFlow`); the mutable field never reaches the public API or its dump.
 - For shared mutable state guarded **across `suspend` boundaries**, use `kotlinx.coroutines.sync.Mutex` or actor-style coroutines.
 - For short, **non-suspending** critical sections (e.g., a couple of map operations), use `kotlinx.atomicfu.locks.synchronized` with a `kotlinx.atomicfu.locks.SynchronizedObject`. It's the KMP-portable equivalent of a JVM monitor — lowers to a `synchronized` block on JVM, an internal lock on K/N. Single-flag state belongs in `kotlinx.atomicfu.atomic` instead.
 - **Never** `kotlin.synchronized` (JVM-only), `java.util.concurrent.locks.*`, `@Synchronized`, `volatile`, or `Object.wait/notify`. None are portable to K/N or wasm.
@@ -84,20 +83,22 @@ Everything else we author — classes, files, top-level functions, top-level `va
 ## 4. Module layout
 
 ```
-/shared               headless KMP module — business logic only
+/reachable            headless KMP library (published) — business logic only
   /src/commonMain
+  /src/appleMain      iOS + macOS shared (Network.framework)
   /src/androidMain
-  /src/iosMain
-  /src/macosMain
   /src/jvmMain        desktop / server JVM
-  /src/wasmJsMain     stretch
-/apps/ios             Xcode project, native SwiftUI, consumes /shared via SPM
-/apps/android         Android entrypoint, native Jetpack Compose UI
+  /api                committed public-API / ABI dumps (Section 10)
+/reachable-testing    published test fakes (FakeReachability, withFakeReachability)
+/gradle/plugins       convention plugins: reachable.kmp-library, reachable.publish
+/apps/ios             Xcode project, native SwiftUI, consumes /Package.swift via SPM
+/apps/android         Android entrypoint, native Jetpack Compose UI (:androidApp)
 /apps/macos           macOS desktop, native SwiftUI/AppKit
-/webApp               native web (stretch)
 ```
 
-`applyDefaultHierarchyTemplate()`. Don't hand-roll source set wiring.
+Source sets come from Kotlin's **default hierarchy template**, applied implicitly — no `applyDefaultHierarchyTemplate { }` block: commonMain → nativeMain → `appleMain` → `iosMain` / `macosMain`, plus `androidMain` and `jvmMain`. Code in `appleMain` must compile on **both** iOS and macOS (Foundation / Network); iOS-only code (UIKit) goes in `iosMain`. Don't hand-roll source-set wiring — any manual `dependsOn()` edge disables the template (LESSONS B-005). A `wasmJs` target, when it comes, slots into the same template.
+
+Module shape lives in the `reachable.kmp-library` convention plugin: framework base name and namespace are DERIVED from the module name (`reachable` → framework `ReachableKit`, namespace `com.happycodelucky.reachable`). Adding a module = apply `reachable.kmp-library` + `reachable.publish`.
 
 `expect`/`actual` surface stays minimal. If an `actual` is more than ~20 lines, refactor to an interface in `commonMain` with platform implementations injected at the entrypoint.
 
@@ -309,6 +310,8 @@ Two channels, no overlap:
 - **Maven Central** (vanniktech `gradle-maven-publish-plugin`) — Android AAR, `kotlinMultiplatform` metadata, per-target klibs. For Gradle/KMP consumers. No XCFramework involved.
 - **GitHub Releases** (KMMBridge) — the SKIE-enhanced `XCFramework` zip for pure-Swift SPM consumers.
 
+**llms.txt for AI tools:** every published jar and the AAR carry `llms.txt` + `llms-full.txt` (the module's public API with KDoc, from Dokka Markdown) under `META-INF/com.happycodelucky.reachable/<artifactId>/`, packed by any publishing build (LESSONS D-011). `mise run llms:generate` previews them; `mise run llms:check` verifies a local publish (CI's Apple leg runs it). The docs site serves its own pair.
+
 **SPM pipeline (release workflow, real publishes only):**
 
 1. Gradle builds an `XCFramework` with `iosArm64` + `iosSimulatorArm64` + `macosArm64` slices. No x86. SKIE-enhanced.
@@ -367,7 +370,7 @@ When starting any task:
 5. Adding a public API consumed from Swift? Apply Section 8 rules at design time, not after.
 6. Changed the public API on purpose? `mise run api:dump` and commit the `api/` diff alongside the code (Section 10) — otherwise `check` fails on the surface change.
 7. Add a changeset (`mise run changeset`, Section 9) when the change reaches consumers, and replace its Unfilled callout with the release note. Its `change` level is the version decision; the PR's "Type of change" only restates it. The usual reading — removed/renamed public API is `major` (even while 0.x), new API `minor`, a fix `patch` — is a default, not a rule: a different level is the author's call (say why in the body). Docs/CI/test-only PRs are out of release scope and need none (`mise run changeset:scope`); label an in-scope PR that still reaches no consumer `no-changeset`.
-8. Done means: `mise run check` passes and `./gradlew :reachable:linkDebugFrameworkIosArm64` builds clean.
+8. Done means: `mise run check` passes and `./gradlew :reachable:linkDebugFrameworkIosArm64` builds clean. `check` never builds the Android sample — `mise run build:samples` does (CI's fast leg runs it); it's what catches AndroidX compileSdk floors (LESSONS B-004).
 9. Opting into experimental APIs? One-line comment explaining what's experimental and the rollback path.
 10. Wasm gap? `// TODO(wasm)` and ship Tier 1.
 11. Stuck? Grep `.claude/lessons/LESSONS.md`.
