@@ -4,8 +4,8 @@
  *
  * Owns everything the two modules previously duplicated (CLAUDE.md §1, §2,
  * §4): the target matrix (ARM-only natives, Android, desktop/server JVM),
- * the apple intermediate source set, the Android library block, compiler
- * options, JVM toolchain wiring, and the SKIE settings that must match
+ * the Android library block (including the consumer-facing AAR floor),
+ * compiler options, JVM bytecode target, and the SKIE settings that must match
  * across modules. Per-module identity
  * (framework base name, bundle id, Android namespace) is derived from the
  * project name so adding a module means applying this plugin and nothing
@@ -20,11 +20,9 @@
  */
 
 import org.gradle.api.artifacts.VersionCatalogsExtension
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
-import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
 
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
@@ -45,20 +43,24 @@ val frameworkBaseName = name.split("-").joinToString("") { part -> part.replaceF
 // framework name.
 val moduleNamespace = "com.happycodelucky." + name.replace("-", ".")
 
+// Bytecode level for BOTH JVM-flavored targets (android + jvm) — a consumer
+// contract, deliberately independent of the JDK that runs the build.
+val jvmBytecodeTarget =
+    JvmTarget.fromTarget(
+        libs
+            .findVersion("jvm-target")
+            .get()
+            .requiredVersion,
+    )
+
 kotlin {
-    // CLAUDE.md §4: applyDefaultHierarchyTemplate. Don't hand-roll source set
-    // wiring. iosMain + macosMain coalesce into a shared "appleMain"
-    // intermediate — both platforms share the `platform.Network.*` cinterop
-    // bindings 1:1.
-    @OptIn(ExperimentalKotlinGradlePluginApi::class)
-    applyDefaultHierarchyTemplate {
-        common {
-            group("apple") {
-                withIos()
-                withMacos()
-            }
-        }
-    }
+    // CLAUDE.md §4: source-set wiring is Kotlin's DEFAULT hierarchy template,
+    // applied implicitly — no `applyDefaultHierarchyTemplate { }` block. For these
+    // targets it yields commonMain → nativeMain → appleMain → {iosMain, macosMain},
+    // plus jvmMain / androidMain siblings. appleMain holds the code iOS and macOS
+    // share (the `platform.Network.*` bindings are identical on both); iosMain /
+    // macosMain hold any platform-only remainder (e.g. UIKit). Declaring any
+    // manual dependsOn() edge disables the template (LESSONS B-005).
 
     // --- Apple targets (CLAUDE.md §1) ---------------------------------------
     // Static framework binaries with a stable bundle id. In `:reachable`,
@@ -74,9 +76,12 @@ kotlin {
 
     // --- JVM target (CLAUDE.md §1) -------------------------------------------
     // Desktop / server JVM. Bytecode is architecture-neutral, so the ARM-only
-    // rule constrains the native slices above, not this jar. The
-    // `targets.withType<KotlinJvmTarget>` block below pins it to JVM 21.
-    jvm()
+    // rule constrains the native slices above, not this jar.
+    jvm {
+        compilerOptions {
+            jvmTarget.set(jvmBytecodeTarget)
+        }
+    }
 
     // --- Android target (CLAUDE.md §1, §4) ----------------------------------
     // The new com.android.kotlin.multiplatform.library plugin's android {} block.
@@ -84,7 +89,6 @@ kotlin {
     // CLAUDE.md §1: arm64-v8a only. The new KMP Android plugin doesn't wire
     // ABI filters directly; consumers' app modules pin the splits. We test
     // arm64-v8a only; documented in README.
-    @OptIn(ExperimentalKotlinGradlePluginApi::class)
     android {
         namespace = moduleNamespace
         compileSdk =
@@ -101,27 +105,38 @@ kotlin {
                 .toInt()
 
         withHostTestBuilder { /* enables the androidHostTest source set */ }
+
+        // What CONSUMERS must compile against, declared rather than inherited
+        // (LESSONS B-002). Left unset, AGP stamps the AAR's `minCompileSdk` with
+        // our compileSdk — raised for the Compose sample's AndroidX deps
+        // (LESSONS B-004) — and every consumer's `check<Variant>AarMetadata`
+        // then demands the same. The catalog's `android-min-compile-sdk` is the
+        // deliberate floor instead.
+        aarMetadata {
+            minCompileSdk =
+                libs
+                    .findVersion("android-min-compile-sdk")
+                    .get()
+                    .requiredVersion
+                    .toInt()
+        }
+
+        // Explicit, never inherited. Left unset, AGP wires this target's
+        // jvmTarget to the JDK running the build — so building on a newer JDK
+        // would silently ship newer bytecode in the AAR. (This target is not a
+        // KotlinJvmTarget, so a `targets.withType<KotlinJvmTarget>()` block
+        // never reaches it — LESSONS B-003.)
+        compilerOptions {
+            jvmTarget.set(jvmBytecodeTarget)
+        }
     }
 
     // --- Compiler options (CLAUDE.md §2, §3) ---------------------------------
-    @OptIn(ExperimentalKotlinGradlePluginApi::class)
     compilerOptions {
         // K2 stable APIs only (CLAUDE.md §3).
         languageVersion.set(KotlinVersion.KOTLIN_2_4)
         apiVersion.set(KotlinVersion.KOTLIN_2_4)
         allWarningsAsErrors.set(true)
-    }
-
-    // Per-target JVM toolchain knobs — Android compilation needs JVM target 21
-    // (CLAUDE.md §2).
-    targets.withType<KotlinJvmTarget>().configureEach {
-        compilations.configureEach {
-            compileTaskProvider.configure {
-                compilerOptions {
-                    jvmTarget.set(JvmTarget.JVM_21)
-                }
-            }
-        }
     }
 
     // --- Public-API / ABI validation ----------------------------------------
