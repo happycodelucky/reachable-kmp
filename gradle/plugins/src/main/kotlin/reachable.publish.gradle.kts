@@ -64,7 +64,7 @@ mavenPublishing {
 
     pom {
         // `name` and `description` are the module build script's job.
-        url.set("https://github.com/happycodelucky/reachable")
+        url.set("https://github.com/happycodelucky/reachable-kmp")
         inceptionYear.set("2026")
 
         licenses {
@@ -82,9 +82,9 @@ mavenPublishing {
             }
         }
         scm {
-            url.set("https://github.com/happycodelucky/reachable")
-            connection.set("scm:git:https://github.com/happycodelucky/reachable.git")
-            developerConnection.set("scm:git:ssh://git@github.com/happycodelucky/reachable.git")
+            url.set("https://github.com/happycodelucky/reachable-kmp")
+            connection.set("scm:git:https://github.com/happycodelucky/reachable-kmp.git")
+            developerConnection.set("scm:git:ssh://git@github.com/happycodelucky/reachable-kmp.git")
         }
     }
 }

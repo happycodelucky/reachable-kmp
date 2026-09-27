@@ -134,7 +134,7 @@ a public GitHub Release asset, pinned by sha256 checksum in the manifest.
 === "Xcode"
 
     1. **File → Add Package Dependencies…**
-    2. Enter `https://github.com/happycodelucky/reachable.git`.
+    2. Enter `https://github.com/happycodelucky/reachable-kmp.git`.
     3. Keep **Up to Next Major Version** with the suggested version.
     4. Add the **Reachable** product to your app target.
 
@@ -142,7 +142,7 @@ a public GitHub Release asset, pinned by sha256 checksum in the manifest.
 
     ```swift
     dependencies: [
-        .package(url: "https://github.com/happycodelucky/reachable.git", from: "{{ version }}"),
+        .package(url: "https://github.com/happycodelucky/reachable-kmp.git", from: "{{ version }}"),
     ],
     targets: [
         .target(
@@ -191,7 +191,7 @@ repositories {
 `mise run publish:local` overwrites the cached artifact; the consumer picks
 up the change on the next Gradle sync.
 
-See [`.github/PUBLISHING.md`](https://github.com/happycodelucky/reachable/blob/main/.github/PUBLISHING.md) for the full local + Maven Central pipeline.
+See [`.github/PUBLISHING.md`](https://github.com/happycodelucky/reachable-kmp/blob/main/.github/PUBLISHING.md) for the full local + Maven Central pipeline.
 
 ## Verification
 

@@ -79,7 +79,7 @@ alongside the Android AAR. Pure-Swift apps add the repo as a Swift
 package instead — a prebuilt XCFramework, no Kotlin toolchain:
 
 ```swift
-.package(url: "https://github.com/happycodelucky/reachable.git", from: "{{ version }}")
+.package(url: "https://github.com/happycodelucky/reachable-kmp.git", from: "{{ version }}")
 ```
 
 See [Installation](installation.md) for both channels.

@@ -441,8 +441,8 @@ jobs:
           else
             echo "🚀 Released com.happycodelucky.reachable:reachable:$RELEASE_VERSION to Maven Central."
             echo "   Maven Central: https://central.sonatype.com/artifact/com.happycodelucky.reachable/reachable/$RELEASE_VERSION"
-            echo "   GitHub Release: https://github.com/happycodelucky/reachable/releases/tag/$RELEASE_TAG"
-            echo "   SPM: add https://github.com/happycodelucky/reachable.git pinned to $RELEASE_TAG (XCFramework zip is a release asset)."
+            echo "   GitHub Release: https://github.com/happycodelucky/reachable-kmp/releases/tag/$RELEASE_TAG"
+            echo "   SPM: add https://github.com/happycodelucky/reachable-kmp.git pinned to $RELEASE_TAG (XCFramework zip is a release asset)."
             echo "   Note: Maven Central indexing can take up to ~30 min to appear in https://repo1.maven.org/maven2/."
           fi
 

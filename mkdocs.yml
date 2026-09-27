@@ -9,9 +9,9 @@
 
 site_name: Reachable
 site_description: A small Kotlin Multiplatform reachability library.
-site_url: https://happycodelucky.github.io/reachable/
+site_url: https://happycodelucky.github.io/reachable-kmp/
 repo_name: happycodelucky/reachable
-repo_url: https://github.com/happycodelucky/reachable
+repo_url: https://github.com/happycodelucky/reachable-kmp
 edit_uri: edit/main/docs/
 copyright: Copyright &copy; 2026 Paul Bates
 
@@ -99,7 +99,7 @@ plugins:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/happycodelucky/reachable
+      link: https://github.com/happycodelucky/reachable-kmp
 
 # Explicit nav — never auto-discovered. Page ordering matters; this file is the truth.
 nav:

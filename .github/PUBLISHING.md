@@ -102,7 +102,7 @@ released to the public. Click **Publish** in the Portal to release, or
 
 The "stops at staging" behaviour depends on `automaticRelease = false`
 in the `mavenPublishing { }` block in
-[`reachable/build.gradle.kts`](https://github.com/happycodelucky/reachable/blob/main/reachable/build.gradle.kts).
+[`reachable/build.gradle.kts`](https://github.com/happycodelucky/reachable-kmp/blob/main/reachable/build.gradle.kts).
 If that flag is ever flipped to `true`, the dry run silently becomes a
 real publish — vanniktech treats the post-upload "release" step as
 automatic. The flag is load-bearing; do not change it without

@@ -7,7 +7,7 @@
 [`mise`](https://mise.jdx.dev) pins every non-Gradle build dep: JDK, the
 Gradle bootstrap binary, Python (for the docs toolchain), `xcodegen`, `gh`,
 `swiftlint`, and `swiftformat`. Versions live in
-[`/mise.toml`](https://github.com/happycodelucky/reachable/blob/main/mise.toml)
+[`/mise.toml`](https://github.com/happycodelucky/reachable-kmp/blob/main/mise.toml)
 and match what CI runs.
 
 ```bash
@@ -72,7 +72,7 @@ mise run build:android  # Android AAR
 
 For the iOS and macOS samples, `mise run open:ios` (and `open:macos`) chains
 `spm:dev` → `xcodegen` → opens the project in Xcode. See
-[apps/ios/README.md](https://github.com/happycodelucky/reachable/blob/main/apps/ios/README.md)
+[apps/ios/README.md](https://github.com/happycodelucky/reachable-kmp/blob/main/apps/ios/README.md)
 and `apps/macos/README.md` for the iteration loop.
 
 ## Building the docs
