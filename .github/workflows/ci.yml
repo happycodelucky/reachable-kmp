@@ -6,65 +6,124 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Cancel superseded runs on the same ref — a new push to a PR makes the previous
+# run's result irrelevant, so don't burn runner minutes finishing it. `main`
+# pushes use a per-SHA group so release-adjacent runs aren't cancelled.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
-  build:
-    runs-on: macos-latest
+  # --- Fast leg: everything that doesn't need a Mac ---------------------------
+  # commonTest runs on the JVM without a simulator/Xcode, so the cheap half of
+  # the suite — ktlint, detekt, and the JVM + Android test targets — runs here
+  # on Ubuntu in ~2–3 min and fails fast.
+  #
+  # NOT run here (both need a Mac and live in the `apple` job): the Apple test
+  # targets, and the public-API/ABI check. `checkKotlinAbi` validates every
+  # target from one dump — including the JVM surface — so running it on the
+  # macOS leg covers the JVM API too; there's no gap, just no duplication.
+  fast:
+    name: Lint + JVM/Android tests
+    runs-on: ubuntu-latest
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
-      # mise pins the JDK, Gradle bootstrap binary, xcodegen, gh, python, and
-      # the Swift tooling (see /mise.toml). One install gives CI and local dev
-      # the same toolchain. setup-gradle below is layered on top purely for
-      # its dependency + build cache — mise has no equivalent.
+      # mise pins the JDK, Gradle bootstrap binary, gh, and python (see
+      # /mise.toml). One install gives CI and local dev the same toolchain; the
+      # macOS-only Swift tools are scoped to macOS there, so Ubuntu skips them.
       - name: Set up mise toolchain
         uses: jdx/mise-action@v4
         with:
           install: true
           cache: true
 
-      # Intentionally pinned at v5 rather than v6. v6 extracted the
-      # caching engine into a separately-licensed `gradle-actions-caching`
-      # component (commercial Terms of Use). v5 keeps the freely-licensed
-      # caching from v4 *and* runs on Node 24, so it sidesteps both the
-      # Node 20 deprecation warning and the v6 license entanglement.
+      # v6 defaults to "Enhanced Caching", a proprietary component under the
+      # Gradle Technologies Terms of Use. `cache-provider: basic` opts out: the
+      # MIT-licensed provider (plain actions/cache of ~/.gradle/caches +
+      # wrapper) — the proprietary library is then never loaded. (This replaces
+      # the old v5 pin, which kept free caching but stopped receiving patches in
+      # Feb 2026.) Tradeoff: basic has no restore keys, so a build-file or
+      # catalog change starts from a cold cache. See the gradle/actions
+      # DISTRIBUTION.md. cache-read-only on fork PRs (which run without secrets
+      # and can't safely populate the shared cache) prevents cache poisoning.
       - name: Set up Gradle cache
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+          cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
 
-      # Read major.minor from the in-tree fallback literal in build.gradle.kts
-      # (the `getOrElse("X.Y.0-SNAPSHOT")` argument) and stamp the patch with
-      # the CI run number. Humans bump major/minor in build.gradle.kts; CI
-      # never writes back. Mirrors the pattern used by other repos in this org.
+      # Lint + detekt + JVM/Android tests. No Apple targets here — those need a
+      # Mac and run in the `apple` job.
+      #
+      # `build:samples` compiles the Android sample app. It's outside `check`,
+      # but an AndroidX bump can raise the compileSdk floor it needs
+      # (aar-metadata minCompileSdk) — only an app build notices (LESSONS B-004).
+      - name: Lint, JVM + Android tests
+        run: |
+          mise run lint
+          mise run test:jvm
+          mise run test:android
+          mise run build:samples
+
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fast-reports
+          path: |
+            reachable/build/reports/
+            reachable-testing/build/reports/
+            apps/android/build/reports/
+          if-no-files-found: ignore
+
+  # --- Apple leg: the expensive Mac-only verification ------------------------
+  # Keep the costly macOS runner focused: the full `check` (which adds the Apple
+  # test targets + the cross-target ABI check) and the release XCFramework link.
+  apple:
+    name: Apple build + full check
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up mise toolchain
+        uses: jdx/mise-action@v4
+        with:
+          install: true
+          cache: true
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+          cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+
+      # Stamp CI builds `<gradle.properties version>-ci.<run>` — the last
+      # release on main (the next one, on a release PR) plus the run number.
+      # Only ever an artifact name; CI never writes the version back.
       - name: Compute version
         id: version
         run: |
-          MAJOR_MINOR=$(grep -oE 'getOrElse\("[0-9]+\.[0-9]+' build.gradle.kts | head -1 | cut -d'"' -f2)
-          if [[ -z "$MAJOR_MINOR" ]]; then
-            echo "Could not parse major.minor from build.gradle.kts" >&2
-            exit 1
-          fi
-          VERSION="${MAJOR_MINOR}.0-ci.${GITHUB_RUN_NUMBER}"
+          set -euo pipefail
+          VERSION="$(python3 scripts/changeset.py current)-ci.${GITHUB_RUN_NUMBER}"
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Computed CI version: $VERSION"
 
-      # `mise run check` runs ktlint + detekt + every unit test on every
-      # target (iosSimulatorArm64Test, macosArm64Test, testAndroidHostTest,
-      # jvmTest) in both published modules (:reachable, :reachable-testing).
-      # Sample apps are deliberately excluded — see mise.toml.
-      # `mise run build` assembles ReachableKit.xcframework — the artifact that
-      # the sample apps under /apps/ios and /apps/macos consume via the root
-      # Package.swift. Maven Central publishing is a separate workflow
-      # (.github/workflows/release.yml). The CI version stamp is passed
-      # through to Gradle via ORG_GRADLE_PROJECT_version — the standard
-      # env-var form of `-Pversion=…` so the mise tasks don't need to know
-      # CI is the caller.
-      - name: Build, test, and assemble XCFramework
+      # `mise run check` runs ktlint + detekt + the public-API/ABI check + every
+      # unit-test target (iosSimulatorArm64Test, macosArm64Test,
+      # testAndroidHostTest, jvmTest). `mise run build:xcframework` builds the
+      # KMMBridge-consumable artifact. The CI version stamp is passed through via
+      # ORG_GRADLE_PROJECT_version — the env-var form of `-Pversion=…`.
+      - name: Full check + assemble XCFramework
         env:
           ORG_GRADLE_PROJECT_version: ${{ steps.version.outputs.VERSION }}
         run: |
           mise run check
-          mise run build
+          mise run build:xcframework
 
       - name: Upload XCFramework
         uses: actions/upload-artifact@v7
