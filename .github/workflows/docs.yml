@@ -1,25 +1,39 @@
 name: Docs
 
+# Builds the mkdocs site on every PR and push to main — `mkdocs build --strict`
+# plus docs/check.py catch broken links and nav drift before they merge — but
+# DEPLOYS it only when asked: the Release workflow calls this after a
+# successful stable release (so the published site always documents what's on
+# Maven Central), and a manual run with `deploy` republishes the site from
+# main between releases (e.g. a docs-only fix).
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch:
-  # Reusable: the Release workflow calls this after a real publish so the
-  # docs site re-resolves the freshly-published version without waiting for
-  # the next push to main. See .github/workflows/release.yml.
+    inputs:
+      deploy:
+        description: Deploy to GitHub Pages (normally the Release workflow does this after a release).
+        required: false
+        type: boolean
+        default: false
   workflow_call:
+    inputs:
+      version:
+        description: The version the site documents. Empty = gradle.properties'.
+        required: false
+        type: string
+        default: ""
+      deploy:
+        required: false
+        type: boolean
+        default: false
 
 # Required by actions/deploy-pages on top of the default GITHUB_TOKEN scopes.
 permissions:
   contents: read
   pages: write
   id-token: write
-
-# Avoid concurrent runs deploying stale builds; only the latest push to main wins.
-concurrency:
-  group: pages
-  cancel-in-progress: false
 
 jobs:
   build:
@@ -28,7 +42,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # mise pins JDK, gradle, python, and the rest of the toolchain (see
       # /mise.toml). setup-gradle stays for its build / dependency cache.
@@ -38,32 +52,25 @@ jobs:
           install: true
           cache: true
 
-      # Pinned at v5 rather than v6: v6 moved caching to a commercially-
-      # licensed component. v5 keeps the freely-licensed caching and runs
-      # on Node 24. See .github/workflows/ci.yml for the full rationale.
+      # `cache-provider: basic` = the MIT-licensed caching provider, never the
+      # proprietary default. See .github/workflows/ci.yml for the full rationale.
       - name: Set up Gradle cache
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
 
       - name: Install mkdocs toolchain
         run: mise run docs:install
 
-      # Resolve the version for the docs build. The mkdocs-macros plugin
-      # reads REACHABLE_VERSION (see /main.py): on push-to-main builds we
-      # pass the latest GitHub release tag so install snippets render the
-      # real pinned version. PR builds skip this step so previews render
-      # the 'main' fallback — appropriate for unreleased work.
-      - name: Resolve release version
-        if: github.event_name != 'pull_request'
+      # The version install snippets render. mkdocs-macros reads it through
+      # /main.py: REACHABLE_VERSION when the Release workflow passes the version
+      # it just published, otherwise `version=` in gradle.properties — the
+      # last release on main (a release PR's preview shows the next one).
+      - name: Use the released version
+        if: inputs.version != ''
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TAG=$(gh release view --json tagName -q .tagName 2>/dev/null || true)
-          if [[ -n "$TAG" ]]; then
-            echo "REACHABLE_VERSION=$TAG" >> "$GITHUB_ENV"
-            echo "Docs will render version: $TAG"
-          else
-            echo "No release tag found; docs will render the 'main' fallback."
-          fi
+          VERSION: ${{ inputs.version }}
+        run: echo "REACHABLE_VERSION=$VERSION" >> "$GITHUB_ENV"
 
       # Dokka writes aggregated HTML into build/dokka/html and copyDokkaToDocs
       # mirrors it into docs/api/ where mkdocs picks it up.
@@ -87,15 +94,28 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
-    if: github.event_name != 'pull_request'
+    # Only when asked (see the header): `inputs.deploy` is unset on push and
+    # pull_request events.
+    if: inputs.deploy
     runs-on: ubuntu-latest
+    # One deploy at a time, and never cancel one mid-flight. Scoped to the
+    # deploy so PR builds don't queue behind it.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
+      # `enablement: true` turns GitHub Pages ON for the repo automatically if
+      # it isn't already, using the GitHub Actions source — so the deploy never
+      # fails with "Get Pages site failed: Not Found". Needs the `pages: write`
+      # permission already granted above.
       - name: Configure Pages
         uses: actions/configure-pages@v6
+        with:
+          enablement: true
 
       - name: Deploy
         id: deployment

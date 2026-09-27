@@ -313,19 +313,22 @@ Two channels, no overlap:
 
 1. Gradle builds an `XCFramework` with `iosArm64` + `iosSimulatorArm64` + `macosArm64` slices. No x86. SKIE-enhanced.
 2. KMMBridge zips the `XCFramework` and **uploads it as a GitHub Release asset** on the `vX.Y.Z` release it creates. GitHub *Releases*, not GitHub *Packages* — Packages requires a PAT even to download from public repos; Release assets are public and unauthenticated.
-3. KMMBridge regenerates the root `Package.swift` referencing the asset by URL + sha256 checksum. The workflow rewrites KMMBridge's API asset URL to the public `releases/download/…` form (same bytes, no anonymous-API quota), commits `Package.swift` to `main`, and force-moves the version tag onto that commit so the tagged manifest matches the uploaded binary.
+3. KMMBridge regenerates the root `Package.swift` referencing the asset by URL + sha256 checksum. The workflow rewrites KMMBridge's API asset URL to the public `releases/download/…` form (same bytes, no anonymous-API quota), commits `Package.swift` on a detached **release commit**, and force-moves the version tag onto it so the tagged manifest matches the uploaded binary. That commit lives **only on the tag** — `main` is branch-protected and keeps the local-dev `Package.swift` (LESSONS D-007).
 4. Swift consumers add this repo's URL as an SPM dependency pinned to a version tag; the tagged `Package.swift` hands them the prebuilt binary.
 
 **Rules:**
 
 - KMMBridge config lives in the `kmmbridge { }` block in `reachable/build.gradle.kts`; the version pin lives in `gradle/libs.versions.toml` like every other dependency.
-- Versioning: the release workflow computes the version and passes `-Pversion=X.Y.Z`; KMMBridge tags `v${version}`. KMMBridge's own timestamp versioning is not used.
+- The framework / Swift module is `ReachableKit` (`<Name>Kit`), so it never shares a name with a public type — SKIE would rename the type in Swift (LESSONS D-008). The convention plugin derives it; KMMBridge's `frameworkName` must match. Renaming it breaks every Swift consumer's `import`.
+- Versioning: the release workflow passes `-Pversion=X.Y.Z` — `gradle.properties`' version, or a pre-release's — and KMMBridge tags `v${version}`. KMMBridge's own timestamp versioning is not used.
 - Publishing is CI-only: the `kmmBridgePublish` task only exists when `-PENABLE_PUBLISHING=true` is passed (the release workflow does).
 - Swift engineers never open a Gradle file. They `swift package update` and consume tagged versions.
 - Don't vendor `XCFramework` zips into the repo. Everything flows through GitHub Release assets + the committed `Package.swift`.
-- `Package.swift` is generated (`kmmBridgePublish` writes the released form, `spmDevBuild` the local-dev form). Don't hand-edit it, and never commit the local-dev form.
+- `Package.swift` on `main` is the committed local-dev form (a `.binaryTarget(path:)` at the debug XCFramework). `kmmBridgePublish` writes the released form onto each tag's release commit, and `spmDevBuild` rewrites it for local development — never commit either rewrite (`mise run spm:restore`).
 
-**Local development override:** the sample apps consume the root `Package.swift` as a local package. Run `./gradlew :reachable:spmDevBuild` (`mise run spm:dev`) to rebuild the debug `XCFramework` and flip `Package.swift` to a local path; `mise run spm:restore` restores the committed version. Documented in `apps/ios/README.md`.
+**Local development override:** the sample apps consume the root `Package.swift` as a local package. Run `./gradlew :reachable:spmDevBuild` (`mise run spm:dev`) to rebuild the debug `XCFramework` and flip `Package.swift` to KMMBridge's local form; `mise run spm:restore` restores the committed version. Documented in `apps/ios/README.md`.
+
+**Releases are changeset-driven** (`.changeset/README.md`, `.github/PUBLISHING.md`; LESSONS D-006). Every PR that reaches consumers adds a changeset (`mise run changeset`: `title`, `change: major|minor|patch`, `description`, then the full note in place of its Unfilled callout); the Changeset PR check enforces it for any PR that changes a file in release scope — `include`/`exclude` globs in `.changeset/config.toml` (label `no-changeset` to opt out). A changeset's `change` is the source of truth for the version — the author's call, which neither the PR nor tooling overrides. Merges to `main` keep one rolling **Release vX.Y.Z** PR up to date — it bumps `version=` in `gradle.properties` (the single source of the version), rewrites every `x-release-version`-marked copy, and writes `docs/changelog.md`. Merging it runs `.github/workflows/release.yml`, which publishes exactly that version to Maven Central and GitHub Releases, then deploys the docs site. While 0.x a `major` change bumps the minor; `version: X.Y.Z` in a changeset pins the version (the way to 1.0.0). Never edit `version=` by hand. Pre-releases and retries: dispatch `release.yml` with a `version` (e.g. `0.15.0-rc.1`), or `mise run publish:maven` by hand. `mise run publish:local` installs the next `X.Y.Z-SNAPSHOT` to `~/.m2` — never the released version, which would shadow Central's.
 
 ---
 
@@ -363,11 +366,12 @@ When starting any task:
 4. Considering a hand-written replacement? Section 6 process. Default answer is "use the library."
 5. Adding a public API consumed from Swift? Apply Section 8 rules at design time, not after.
 6. Changed the public API on purpose? `mise run api:dump` and commit the `api/` diff alongside the code (Section 10) — otherwise `check` fails on the surface change.
-7. Done means: `mise run check` passes and `./gradlew :reachable:linkDebugFrameworkIosArm64` builds clean.
-8. Opting into experimental APIs? One-line comment explaining what's experimental and the rollback path.
-9. Wasm gap? `// TODO(wasm)` and ship Tier 1.
-10. Stuck? Grep `.claude/lessons/LESSONS.md`.
-11. Learned something? Add to `.claude/lessons/LESSONS.md` immediately.
+7. Add a changeset (`mise run changeset`, Section 9) when the change reaches consumers, and replace its Unfilled callout with the release note. Its `change` level is the version decision; the PR's "Type of change" only restates it. The usual reading — removed/renamed public API is `major` (even while 0.x), new API `minor`, a fix `patch` — is a default, not a rule: a different level is the author's call (say why in the body). Docs/CI/test-only PRs are out of release scope and need none (`mise run changeset:scope`); label an in-scope PR that still reaches no consumer `no-changeset`.
+8. Done means: `mise run check` passes and `./gradlew :reachable:linkDebugFrameworkIosArm64` builds clean.
+9. Opting into experimental APIs? One-line comment explaining what's experimental and the rollback path.
+10. Wasm gap? `// TODO(wasm)` and ship Tier 1.
+11. Stuck? Grep `.claude/lessons/LESSONS.md`.
+12. Learned something? Add to `.claude/lessons/LESSONS.md` immediately.
 
 ---
 
@@ -384,5 +388,5 @@ When starting any task:
 - No EAP/RC/beta on `main`.
 - No callback-based public APIs in `commonMain`.
 - No UI dependencies in `/shared`.
-- No hand-edited `Package.swift`.
+- No committed `spmDevBuild` / `kmmBridgePublish` rewrite of `Package.swift` — `main` holds the local-dev form, tags hold the released form.
 - No vendored `XCFramework` in the iOS repo.

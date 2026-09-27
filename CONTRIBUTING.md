@@ -96,14 +96,29 @@ from the site navigation, every recipe has at least one code block.
 - New behavior has a test in `commonTest` or the relevant platform test
   source set.
 - `mkdocs build --strict` and `docs/check.py` pass if docs changed.
+- Does the change reach consumers? Add a changeset — `mise run changeset` —
+  and replace its *Unfilled* callout with the release note (see
+  [`.changeset/README.md`](.changeset/README.md)). Its `change` level decides
+  the version; the PR's *Type of change* just restates it.
+- Fill in the PR template. Sections holding an *Unfilled* callout (Summary,
+  Open questions, How it was verified) are required. Agent-authored PRs open
+  as drafts and say so under *AI assistance*; marking one ready for review
+  means a human has reviewed it (CLAUDE.md §12).
 - The PR title and body explain the *why*; the diff shows the *what*.
 
-CI runs the full pipeline (build, test, XCFramework assembly, docs build,
-docs validation) on every PR.
+CI runs the full pipeline on every PR: lint, JVM + Android tests and the
+Android sample build on Ubuntu; the full `check` (Apple tests + ABI check)
+and XCFramework assembly on macOS; the docs build and validation. The
+**Changeset** check fails a PR that changes a file in release scope
+(`.changeset/config.toml` — the published modules and build logic, not docs,
+CI, tests or samples) and adds no `.changeset/*.md`; if it still reaches no
+consumer, label it `no-changeset` instead.
 
 ## Releasing
 
-Releases publish to Maven Central via vanniktech maven-publish, then tag
-the commit and create a GitHub Release with auto-generated notes. The
-mechanics, one-time credential setup, and the dry-run / live-publish
-toggle live in [`.github/PUBLISHING.md`](.github/PUBLISHING.md).
+Releases come from the changesets. Merges to `main` keep a **Release vX.Y.Z**
+PR open with the computed version and changelog; merging it publishes to
+Maven Central and GitHub Releases (SPM) and deploys the docs site.
+Pre-releases and retries are manual runs of the Release workflow. Don't
+hand-edit `version=` in `gradle.properties`. The mechanics and one-time
+credential setup live in [`.github/PUBLISHING.md`](.github/PUBLISHING.md).

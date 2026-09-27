@@ -74,36 +74,42 @@ depend on `:reachable` from `commonMain` — KMP resolves the right per-target
 slice (Android AAR, JVM jar, `iosArm64`, `iosSimulatorArm64`, `macosArm64`)
 for you:
 
+<!-- x-release-version-start -->
 ```kotlin
 // shared/build.gradle.kts
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("com.happycodelucky.reachable:reachable:0.12.11")
+            implementation("com.happycodelucky.reachable:reachable:0.14.0")
         }
     }
 }
 ```
+<!-- x-release-version-end -->
 
 Android-only and JVM-only consumers depend on the artifact directly:
 
+<!-- x-release-version-start -->
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("com.happycodelucky.reachable:reachable:0.12.11")
+    implementation("com.happycodelucky.reachable:reachable:0.14.0")
 }
 ```
+<!-- x-release-version-end -->
 
 Pure-Swift apps (no Kotlin toolchain) consume Reachable via Swift Package
 Manager instead — a prebuilt, SKIE-enhanced `ReachableKit.xcframework` attached
 to each GitHub Release:
 
+<!-- x-release-version-start -->
 ```swift
 // Package.swift — or Xcode: File → Add Package Dependencies…
 dependencies: [
-    .package(url: "https://github.com/happycodelucky/reachable-kmp.git", from: "0.12.11"),
+    .package(url: "https://github.com/happycodelucky/reachable-kmp.git", from: "0.14.0"),
 ]
 ```
+<!-- x-release-version-end -->
 
 A companion `reachable-testing` artifact ships `FakeReachability` and the
 `withFakeReachability { }` helper — add it as a test dependency at the same

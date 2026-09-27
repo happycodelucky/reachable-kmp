@@ -63,12 +63,12 @@ every open, so the edit-build cycle for Kotlin code is:
 2. `mise run spm:dev` (or `./gradlew :reachable:spmDevBuild` from the repo root)
 3. Rebuild the iOSApp target in Xcode
 
-`/Package.swift` is committed, and the committed form is the *released*
-one: a remote `.binaryTarget(url:checksum:)` referencing the
-`ReachableKit.xcframework.zip` asset on the GitHub Release for the latest
-version tag — that's what SPM consumers resolve when they add this repo
-as a package (see
-[docs/installation.md](../docs/installation.md#swift-package-manager)).
-`spm:dev` flips it to a local `.binaryTarget(path:)` for iteration; that
-rewrite is working-tree-only — don't commit it. `mise run spm:restore`
-puts the committed version back.
+`/Package.swift` is committed in a local-dev form: a `.binaryTarget(path:)`
+at `reachable/build/XCFrameworks/debug/ReachableKit.xcframework`, so run
+`mise run spm:dev` once before the first Xcode build. The *released* form —
+a remote `.binaryTarget(url:checksum:)` referencing the
+`ReachableKit.xcframework.zip` release asset — exists only on each `vX.Y.Z`
+tag; that's what SPM consumers resolve when they add this repo as a package
+(see [docs/installation.md](../docs/installation.md#swift-package-manager)).
+KMMBridge's `spm:dev` rewrite differs from the committed file — don't commit
+it; `mise run spm:restore` puts the committed version back.

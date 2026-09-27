@@ -128,15 +128,15 @@ when the block throws.
 Pure-Swift apps consume Reachable as a binary Swift package: a prebuilt
 `ReachableKit.xcframework` with `iosArm64`, `iosSimulatorArm64`,
 and `macosArm64` slices. No Kotlin toolchain, no Gradle, no authentication —
-the package manifest lives at the root of this repository and the binary is
-a public GitHub Release asset, pinned by sha256 checksum in the manifest.
+each release tag carries the package manifest, and the binary is a public
+GitHub Release asset, pinned by sha256 checksum in that manifest.
 
 === "Xcode"
 
     1. **File → Add Package Dependencies…**
     2. Enter `https://github.com/happycodelucky/reachable-kmp.git`.
     3. Keep **Up to Next Major Version** with the suggested version.
-    4. Add the **Reachable** product to your app target.
+    4. Add the **ReachableKit** product to your app target.
 
 === "Package.swift"
 
@@ -174,8 +174,12 @@ When working on the library itself, publish to your local Maven repository
 and consume from there:
 
 ```bash
-./gradlew :reachable:publishToMavenLocal
+mise run publish:local
 ```
+
+It publishes the version under development as a `-SNAPSHOT` (the next
+release the pending changes add up to), never a released version — so it
+can't shadow the real artifact from Maven Central.
 
 A consuming Gradle project then adds `mavenLocal()` to its repository list:
 
@@ -186,8 +190,8 @@ repositories {
 }
 ```
 
-…and pins the dependency to the snapshot version (e.g.
-`com.happycodelucky.reachable:reachable:0.1.0-SNAPSHOT`). Re-running
+…and pins the dependency to the snapshot version the task printed (e.g.
+`com.happycodelucky.reachable:reachable:0.15.0-SNAPSHOT`). Re-running
 `mise run publish:local` overwrites the cached artifact; the consumer picks
 up the change on the next Gradle sync.
 
