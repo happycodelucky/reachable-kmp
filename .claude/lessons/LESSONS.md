@@ -29,7 +29,7 @@ versions without trusting search.
 
 ## Bugs we've hit (B)
 
-### B-001 — Renovate's SKIE-bound Kotlin guard was silently dead (2026-07-30)
+### ~~B-001~~ — Renovate's SKIE-bound Kotlin guard was silently dead (2026-07-30) — obsolete: Renovate removed 2026-09-27 (the app was never installed)
 `matchPackagePrefixes` was removed in Renovate **v38**, so the rule enforcing N-006 survived only via silent config migration. It also over-matched: `org.jetbrains.kotlin` prefix-matches `org.jetbrains.kotlinx`, so it was disabling coroutines/atomicfu updates too — and v38+ auto-migration to `org.jetbrains.kotlin{/,}**` preserves that. Fixed with an anchored regex (`/^org\.jetbrains\.kotlin([.:]|$)/`). Validate config against a **current** Renovate major; older validators still accept the removed key.
 
 ---
