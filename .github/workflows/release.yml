@@ -4,7 +4,7 @@ name: Release
 #
 #   1. Maven Central (vanniktech plugin) — Android AAR, kotlinMultiplatform
 #      metadata, per-target klibs. For Gradle / KMP consumers.
-#   2. GitHub Releases (KMMBridge) — the SKIE-enhanced Reachable.xcframework
+#   2. GitHub Releases (KMMBridge) — the SKIE-enhanced ReachableKit.xcframework
 #      zip, attached to the vX.Y.Z release and referenced from the root
 #      Package.swift by URL + checksum. For pure-Swift SPM consumers; no
 #      Gradle build, no authentication. GitHub *Releases*, not GitHub
@@ -339,12 +339,12 @@ jobs:
       # no asset for Package.swift to reference. `kmmBridgePublish` does the
       # heavy lifting in one Gradle invocation:
       #
-      #   1. Builds the SKIE-enhanced release Reachable.xcframework (all
+      #   1. Builds the SKIE-enhanced release ReachableKit.xcframework (all
       #      three slices: iosArm64, iosSimulatorArm64, macosArm64).
       #   2. Zips it and creates the GitHub Release tagged `vX.Y.Z` (the tag
       #      lands on the default-branch HEAD — moved onto the Package.swift
       #      commit two steps later).
-      #   3. Uploads `Reachable.xcframework.zip` as a release asset.
+      #   3. Uploads `ReachableKit.xcframework.zip` as a release asset.
       #   4. Regenerates the root Package.swift with the asset URL + sha256
       #      checksum.
       #
@@ -382,7 +382,7 @@ jobs:
         if: ${{ !inputs.dryRun }}
         run: |
           set -euo pipefail
-          ASSET_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/Reachable.xcframework.zip"
+          ASSET_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/ReachableKit.xcframework.zip"
 
           sed -i '' -E "s|^let remoteKotlinUrl = .*$|let remoteKotlinUrl = \"${ASSET_URL}\"|" Package.swift
 

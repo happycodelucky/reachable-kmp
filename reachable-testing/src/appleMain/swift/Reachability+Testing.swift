@@ -29,12 +29,12 @@
 // from being re-extracted and recompiled inside downstream modules where
 // `Reachability` is renamed `ReachableReachability` (module-prefixed). The
 // same setting is wired on `:reachable-testing` for the same reason — this
-// extension is compiled into `ReachableTesting.framework` directly and not
+// extension is compiled into `ReachableTestingKit.framework` directly and not
 // bundled into the klib for downstream re-extraction.
 //
 
 import Foundation
-import Reachable
+import ReachableKit
 
 extension Reachability {
     /// Install `override` as the value returned from

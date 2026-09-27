@@ -299,7 +299,7 @@ public interface Reachability : AutoCloseable {
          *
          * Note: `@TestingOnly` is a Kotlin-compile-time guard only; it
          * provides no Swift-side enforcement. Swift consumers of the
-         * production `Reachable.framework` can call the ObjC-bridged form
+         * production `ReachableKit.framework` can call the ObjC-bridged form
          * without any compiler warning. Discipline between the production
          * and testing frameworks is the only Swift-side boundary.
          *

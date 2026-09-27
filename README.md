@@ -95,7 +95,7 @@ dependencies {
 ```
 
 Pure-Swift apps (no Kotlin toolchain) consume Reachable via Swift Package
-Manager instead — a prebuilt, SKIE-enhanced `Reachable.xcframework` attached
+Manager instead — a prebuilt, SKIE-enhanced `ReachableKit.xcframework` attached
 to each GitHub Release:
 
 ```swift
@@ -157,7 +157,7 @@ The same `appleMain` factory covers all three platforms. Use
 `Reachability.shared` for zero-setup access:
 
 ```swift
-import Reachable
+import ReachableKit
 
 @MainActor
 @Observable
@@ -377,7 +377,7 @@ Then the task surface:
 mise run check          # ktlint + all unit tests (iOS sim, macOS, Android host, JVM)
 mise run build:ios      # iOS device + simulator debug frameworks
 mise run build:macos    # macOS desktop debug framework
-mise run build          # release Reachable.xcframework (sample-app local SPM)
+mise run build          # release ReachableKit.xcframework (sample-app local SPM)
 mise run build:android  # Android AAR
 mise run open:ios       # spm:dev + xcodegen + open apps/ios in Xcode
 mise run open:macos     # spm:dev + xcodegen + open apps/macos in Xcode

@@ -57,7 +57,7 @@ mise run check          # ktlint, detekt, and every unit test in both published
                         # modules (iOS sim, macOS, Android host)
 mise run build:ios      # iOS device and Apple Silicon simulator debug frameworks
 mise run build:macos    # macOS desktop debug framework
-mise run build          # release Reachable.xcframework (SPM-consumable)
+mise run build          # release ReachableKit.xcframework (SPM-consumable)
 mise run build:android  # Android AAR
 
 # Raw Gradle equivalents, for reference:
@@ -65,7 +65,7 @@ mise run build:android  # Android AAR
 ./gradlew :reachable:linkDebugFrameworkIosArm64
 ./gradlew :reachable:linkDebugFrameworkIosSimulatorArm64
 ./gradlew :reachable:linkDebugFrameworkMacosArm64
-./gradlew :reachable:assembleReachableXCFramework
+./gradlew :reachable:assembleReachableKitXCFramework
 ./gradlew :reachable:assemble
 ./gradlew :androidApp:assembleDebug   # project is under apps/android
 ```

@@ -52,7 +52,7 @@ jobs:
       # target (iosSimulatorArm64Test, macosArm64Test, testAndroidHostTest,
       # jvmTest) in both published modules (:reachable, :reachable-testing).
       # Sample apps are deliberately excluded — see mise.toml.
-      # `mise run build` assembles Reachable.xcframework — the artifact that
+      # `mise run build` assembles ReachableKit.xcframework — the artifact that
       # the sample apps under /apps/ios and /apps/macos consume via the root
       # Package.swift. Maven Central publishing is a separate workflow
       # (.github/workflows/release.yml). The CI version stamp is passed
@@ -69,8 +69,8 @@ jobs:
       - name: Upload XCFramework
         uses: actions/upload-artifact@v7
         with:
-          name: Reachable-${{ steps.version.outputs.VERSION }}.xcframework
-          path: reachable/build/XCFrameworks/release/Reachable.xcframework
+          name: ReachableKit-${{ steps.version.outputs.VERSION }}.xcframework
+          path: reachable/build/XCFrameworks/release/ReachableKit.xcframework
           if-no-files-found: error
 
       - name: Upload test reports on failure

@@ -134,7 +134,7 @@ dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 # kmmbridge-github — applied in reachable/build.gradle.kts. Publishes the
-# SKIE-enhanced Reachable.xcframework zip as a GitHub *Release* asset (public,
+# SKIE-enhanced ReachableKit.xcframework zip as a GitHub *Release* asset (public,
 # unauthenticated download — unlike GitHub Packages, which requires a PAT even
 # on public repos) and regenerates the root Package.swift to reference it by
 # URL + checksum. See the `kmmbridge { }` block in reachable/build.gradle.kts

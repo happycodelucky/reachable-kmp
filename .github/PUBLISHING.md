@@ -22,7 +22,7 @@ in-process.
 
 A real (non-dry-run) release additionally ships the Swift Package Manager
 distribution via [KMMBridge](https://touchlab.co/kmmbridge/): the
-SKIE-enhanced `Reachable.xcframework` zip lands on the GitHub Release as a
+SKIE-enhanced `ReachableKit.xcframework` zip lands on the GitHub Release as a
 public asset, and the root `Package.swift` is regenerated to reference it
 by URL + checksum. See [SPM distribution](#spm-distribution) below for the
 mechanics and failure recovery.
@@ -144,9 +144,9 @@ Only on `dryRun=false`. After the Maven Central publish succeeds, three
 workflow steps ship the Swift package:
 
 1. **`./gradlew :reachable:kmmBridgePublish`** — builds the release
-   `Reachable.xcframework` (all three slices, SKIE-enhanced), zips it,
+   `ReachableKit.xcframework` (all three slices, SKIE-enhanced), zips it,
    creates the GitHub Release tagged `vX.Y.Z` (the tag initially points
-   at the pre-release `main` HEAD), uploads `Reachable.xcframework.zip`
+   at the pre-release `main` HEAD), uploads `ReachableKit.xcframework.zip`
    as an asset, and regenerates the root `Package.swift` with the asset
    URL + sha256 checksum. The task only exists when
    `-PENABLE_PUBLISHING=true` is passed, so local builds can't trip it.
@@ -154,7 +154,7 @@ workflow steps ship the Swift package:
    (`api.github.com/repos/…/releases/assets/<id>.zip`). SPM can consume
    it, but it serves JSON to plain HTTP clients and burns the anonymous
    60-requests/hour API quota. The workflow rewrites it to the public
-   `releases/download/vX.Y.Z/Reachable.xcframework.zip` URL — same bytes,
+   `releases/download/vX.Y.Z/ReachableKit.xcframework.zip` URL — same bytes,
    same checksum — and validates the manifest with
    `swift package dump-package`.
 3. **Commit + tag move** — the regenerated `Package.swift` is committed
@@ -181,7 +181,7 @@ Recover manually instead:
 - **Release exists but `Package.swift` wasn't committed / tag wasn't
   moved** — finish locally: update `Package.swift`'s `remoteKotlinUrl`
   / `remoteKotlinChecksum` (the checksum is `swift package
-  compute-checksum Reachable.xcframework.zip` on the downloaded asset),
+  compute-checksum ReachableKit.xcframework.zip` on the downloaded asset),
   commit to `main`, then `git tag -fa vX.Y.Z && git push --force origin
   refs/tags/vX.Y.Z`.
 

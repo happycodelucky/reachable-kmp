@@ -11,8 +11,8 @@
  * project name so adding a module means applying this plugin and nothing
  * else:
  *
- *   reachable          → framework "Reachable",        namespace com.happycodelucky.reachable
- *   reachable-testing  → framework "ReachableTesting", namespace com.happycodelucky.reachable.testing
+ *   reachable          → framework "ReachableKit",        namespace com.happycodelucky.reachable
+ *   reachable-testing  → framework "ReachableTestingKit", namespace com.happycodelucky.reachable.testing
  *
  * Module build scripts keep only what genuinely differs: dependencies,
  * the KMMBridge SPM distribution config (`:reachable` only), and POM
@@ -35,8 +35,13 @@ plugins {
 // the named-lookup API reads the same catalog the main build uses.
 val libs = the<VersionCatalogsExtension>().named("libs")
 
-// reachable → "Reachable"; reachable-testing → "ReachableTesting".
-val frameworkBaseName = name.split("-").joinToString("") { part -> part.replaceFirstChar(Char::uppercase) }
+// reachable → "ReachableKit"; reachable-testing → "ReachableTestingKit". The "Kit"
+// suffix keeps the Swift module name distinct from the library's public types: a
+// module and a type with the same name make SKIE rename the type in Swift
+// (`Reachable` → `Reachable_`) and let the bare type shadow the module qualifier
+// in SKIE's generated code (LESSONS D-008). Must match KMMBridge's frameworkName
+// in reachable/build.gradle.kts.
+val frameworkBaseName = name.split("-").joinToString("") { part -> part.replaceFirstChar(Char::uppercase) } + "Kit"
 
 // reachable → com.happycodelucky.reachable; reachable-testing → ….reachable.testing.
 // Doubles as the framework bundle id, pinned so SKIE doesn't fall back to the
@@ -64,7 +69,7 @@ kotlin {
 
     // --- Apple targets (CLAUDE.md §1) ---------------------------------------
     // Static framework binaries with a stable bundle id. In `:reachable`,
-    // KMMBridge aggregates these into `Reachable.xcframework` at config time
+    // KMMBridge aggregates these into `ReachableKit.xcframework` at config time
     // (no explicit XCFramework declaration — see reachable/build.gradle.kts).
     listOf(iosArm64(), iosSimulatorArm64(), macosArm64()).forEach { target ->
         target.binaries.framework {

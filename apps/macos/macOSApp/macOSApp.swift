@@ -10,7 +10,7 @@
 // the only differences are window sizing and the deployment platform.
 
 import SwiftUI
-import Reachable
+import ReachableKit
 
 @main
 struct macOSApp: App {

@@ -5,7 +5,7 @@ Reachable ships through two channels:
 | Channel | For | Artifacts |
 |---|---|---|
 | **Maven Central** | Gradle — Android, JVM, Kotlin Multiplatform | Android AAR, JVM jar, `kotlinMultiplatform` metadata, per-target klibs (`iosArm64`, `iosSimulatorArm64`, `macosArm64`) |
-| **Swift Package Manager** | Pure-Swift iOS / macOS apps, no Kotlin toolchain | Prebuilt `Reachable.xcframework`, hosted as a GitHub Release asset |
+| **Swift Package Manager** | Pure-Swift iOS / macOS apps, no Kotlin toolchain | Prebuilt `ReachableKit.xcframework`, hosted as a GitHub Release asset |
 
 Kotlin Multiplatform projects should use the Maven artifact from
 `commonMain` — KMP resolves the right per-target slice automatically, and
@@ -126,7 +126,7 @@ when the block throws.
 ## Swift Package Manager
 
 Pure-Swift apps consume Reachable as a binary Swift package: a prebuilt
-`Reachable.xcframework` with `iosArm64`, `iosSimulatorArm64`,
+`ReachableKit.xcframework` with `iosArm64`, `iosSimulatorArm64`,
 and `macosArm64` slices. No Kotlin toolchain, no Gradle, no authentication —
 the package manifest lives at the root of this repository and the binary is
 a public GitHub Release asset, pinned by sha256 checksum in the manifest.
@@ -148,18 +148,18 @@ a public GitHub Release asset, pinned by sha256 checksum in the manifest.
         .target(
             name: "MyApp",
             dependencies: [
-                .product(name: "Reachable", package: "reachable"),
+                .product(name: "ReachableKit", package: "reachable-kmp"),
             ]
         ),
     ]
     ```
 
-Then `import Reachable`. The Swift bridge is baked into the framework, so
+Then `import ReachableKit`. The Swift bridge is baked into the framework, so
 `StateFlow` arrives as a Swift `AsyncSequence`, sealed types `switch`
 exhaustively via `onEnum(of:)`, and `suspend` functions are `async throws`.
 
 Each release tag carries a `Package.swift` whose binary target references
-that release's `Reachable.xcframework.zip` asset, so `swift package
+that release's `ReachableKit.xcframework.zip` asset, so `swift package
 resolve` downloads a prebuilt framework instead of compiling Kotlin.
 
 If you're working from a KMP project, don't add the Swift package — the

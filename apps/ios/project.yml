@@ -17,10 +17,10 @@ options:
     iOS: "18.0"
   createIntermediateGroups: true
 
-# Local SPM dependency on the Reachable package generated at the repo root by
+# Local SPM dependency on the ReachableKit package generated at the repo root by
 # `./gradlew :reachable:spmDevBuild`. Path is relative to the .xcodeproj.
 packages:
-  Reachable:
+  ReachableKit:
     path: ../
 
 targets:
@@ -48,4 +48,4 @@ targets:
         # their personal team. CI won't run this target.
         CODE_SIGN_STYLE: Automatic
     dependencies:
-      - package: Reachable
+      - package: ReachableKit

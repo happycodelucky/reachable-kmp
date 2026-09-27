@@ -12,7 +12,7 @@
 // task in `deinit`.
 
 import SwiftUI
-import Reachable
+import ReachableKit
 
 @main
 struct iOSApp: App {

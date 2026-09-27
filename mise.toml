@@ -92,8 +92,8 @@ swiftformat apps/macos
 # --- build -----------------------------------------------------------------
 
 [tasks.build]
-description = "Assemble the release Reachable.xcframework (sample-app local SPM)."
-run = "./gradlew :reachable:assembleReachableXCFramework"
+description = "Assemble the release ReachableKit.xcframework (sample-app local SPM)."
+run = "./gradlew :reachable:assembleReachableKitXCFramework"
 
 [tasks."build:ios"]
 description = "Link debug iOS framework slices (device + Apple Silicon simulator)."
@@ -115,16 +115,16 @@ description = "Assemble the desktop/server JVM jar."
 run = "./gradlew :reachable:jvmJar"
 
 [tasks.xcframework]
-description = "Alias for `build` — produces the release Reachable.xcframework."
+description = "Alias for `build` — produces the release ReachableKit.xcframework."
 depends = ["build"]
 
 # --- iteration helpers -----------------------------------------------------
 
 [tasks."spm:dev"]
-description = "Rebuild the debug Reachable.xcframework and point /Package.swift at it (local dev mode)."
+description = "Rebuild the debug ReachableKit.xcframework and point /Package.swift at it (local dev mode)."
 # KMMBridge's `spmDevBuild` builds the debug XCFramework and REWRITES the
 # root /Package.swift to a `.binaryTarget(path: …)` pointing at
-# `reachable/build/XCFrameworks/debug/Reachable.xcframework`, so the sample
+# `reachable/build/XCFrameworks/debug/ReachableKit.xcframework`, so the sample
 # apps pick up local Kotlin edits without Gradle inside Xcode.
 #
 # After the first tagged release, the committed Package.swift is the
