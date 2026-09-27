@@ -1,0 +1,6 @@
+# Bugs and features go through the structured forms, so every issue stays
+# machine-readable (predictable fields for triage, automation, and coding
+# agents). Blank issues stay enabled only as the route for questions: this repo
+# has no Discussions. Once Discussions is on, set this to false and add a
+# contact_links entry pointing questions there.
+blank_issues_enabled: true

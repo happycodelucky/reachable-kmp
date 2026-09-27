@@ -25,8 +25,9 @@ invocations still work; mise just ensures everyone runs the same versions.
 - Latest stable Xcode that the pinned SKIE version supports — see
   [SKIE releases](https://github.com/touchlab/SKIE/releases). Xcode is
   not managed by mise; install it yourself.
-- Android SDK with command-line tools; `local.properties` should set
-  `sdk.dir`.
+- Android SDK with command-line tools; `local.properties` (gitignored) sets
+  `sdk.dir` — `cp local.properties.example local.properties` and edit it. A
+  git worktree doesn't carry it over; copy it in there too.
 
 A few binding repo conventions worth knowing before you open a PR:
 Kotlin-first dependencies, ARM-only targets, SKIE for the Swift surface,
@@ -35,7 +36,7 @@ Maven Central publishing, and the Apple platform-name casing rule
 
 ## Reporting a bug
 
-Open an issue with:
+Open an issue with the **Bug report** form. It asks for:
 
 1. Platform (iOS / iPadOS / macOS / Android), OS version, device or simulator.
 2. The reachability state when the bug reproduces (Wi-Fi, cellular, captive

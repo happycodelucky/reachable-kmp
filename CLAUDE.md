@@ -372,6 +372,9 @@ When starting any task:
 10. Wasm gap? `// TODO(wasm)` and ship Tier 1.
 11. Stuck? Grep `.claude/lessons/LESSONS.md`.
 12. Learned something? Add to `.claude/lessons/LESSONS.md` immediately.
+13. Opening a PR or filing an issue? GitHub applies the templates only in its web UI — `gh … create --body` skips them — so build the body from them yourself and pass it with `--body-file` (LESSONS B-006):
+    - **PR:** start from `.github/PULL_REQUEST_TEMPLATE.md`. Follow each `<!-- AI: … -->` comment, replace every `Unfilled` callout (none may remain), prune each choice list to the lines that apply, and tick a done-gate box only for what you actually ran or checked. Keep "AI-authored" under AI assistance, name the tool + model, and open with `--draft` — a human marking it ready is the review sign-off (LESSONS B-007).
+    - **Issue:** read the matching form in `.github/ISSUE_TEMPLATE/`. Write each field's `label` as a `### ` heading in form order, with `_No response_` under a skipped optional field — the exact shape the web form produces. Use its `title:` prefix and `labels:` (drop any the repo lacks — `gh` rejects them). Tick a required checkbox only if it's true (e.g. search with `gh issue list --search` first).
 
 ---
 
