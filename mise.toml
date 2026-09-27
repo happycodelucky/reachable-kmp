@@ -254,6 +254,18 @@ description = "Publish both modules to the local Maven repo (~/.m2) as the next 
 # patch — as a -SNAPSHOT, which a consumer opts into explicitly.
 run = './gradlew publishToMavenLocal -Pversion="$(python3 scripts/changeset.py snapshot)"'
 
+[tasks."llms:generate"]
+description = "Write each module's llms.txt + llms-full.txt (its public API, from Dokka) to <module>/build/llms/ to preview them."
+# Every published jar and AAR carries this pair under
+# META-INF/<groupId>/<artifactId>/ — packed only by builds that publish
+# (reachable.publish), so check/test runs never pay for Dokka.
+run = "./gradlew :reachable:generateLlmsTxt :reachable-testing:generateLlmsTxt"
+
+[tasks."llms:check"]
+description = "publish:local, then verify every published jar and AAR carries llms.txt + llms-full.txt (CI's Apple leg runs this)."
+depends = ["publish:local"]
+run = 'sh scripts/check-llms.sh "$(python3 scripts/changeset.py snapshot)"'
+
 [tasks."publish:maven"]
 description = "Release by hand: gradle.properties' version, or --version X.Y.Z-rc.1 for a pre-release; --dryrun stages only. See scripts/release.sh."
 # The canonical path is CI: merging the release PR runs
