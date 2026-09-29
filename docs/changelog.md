@@ -1,10 +1,21 @@
+---
+title: Changelog
+# Changeset bodies are arbitrary Markdown; don't let mkdocs-macros read a
+# `{{ … }}` in one as template syntax.
+render_macros: false
+---
+
 # Changelog
 
-Versions follow [SemVer](https://semver.org/). Each release is published
-to Maven Central and tagged on GitHub. Pin to a tag, never to
-`branch: "main"`.
+Every release of Reachable, newest first. Versions follow
+[SemVer](https://semver.org/); each release is published to Maven Central
+and tagged on GitHub. Pin to a tag, never to `branch: "main"`. Each entry is
+assembled from the changesets merged since the previous release, when its
+release PR is opened.
 
-## Unreleased
+<!-- changesets: the Release PR workflow inserts each new release below this line. Keep it. -->
+
+## 0.14.0 and earlier
 
 ### Public API
 

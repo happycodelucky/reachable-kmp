@@ -99,11 +99,7 @@ public enum class Transport {
  * of `NET_CAPABILITY_NOT_METERED || NET_CAPABILITY_TEMPORARILY_NOT_METERED`.
  * The JVM has no metering signal; there it is always `false`.
  */
-public data class ReachabilityStatus(
-    val isReachable: Boolean,
-    val transport: Transport,
-    val isDataMetered: Boolean,
-) {
+public data class ReachabilityStatus(val isReachable: Boolean, val transport: Transport, val isDataMetered: Boolean) {
     public companion object {
         /**
          * Pre-observation seed value. Emitted exactly once at the start of
@@ -303,7 +299,7 @@ public interface Reachability : AutoCloseable {
          *
          * Note: `@TestingOnly` is a Kotlin-compile-time guard only; it
          * provides no Swift-side enforcement. Swift consumers of the
-         * production `Reachable.framework` can call the ObjC-bridged form
+         * production `ReachableKit.framework` can call the ObjC-bridged form
          * without any compiler warning. Discipline between the production
          * and testing frameworks is the only Swift-side boundary.
          *
@@ -330,9 +326,7 @@ public interface Reachability : AutoCloseable {
  * handles; consumers can hold and call them but cannot fabricate one.
  */
 @TestingOnly
-public class TestingOverrideHandle internal constructor(
-    private val previous: Reachability?,
-) {
+public class TestingOverrideHandle internal constructor(private val previous: Reachability?) {
     /**
      * Restore the previous override (which may be `null` to mean "no
      * override"). Calling `uninstall()` multiple times restores `previous`

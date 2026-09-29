@@ -1,19 +1,37 @@
 # Reachable — editor + ktlint configuration (CLAUDE.md §3).
-#
-# ktlint reads this file natively. max_line_length keeps ktlint's wrapping
-# rules in agreement with detekt's MaxLineLength (also 120) — without it,
-# ktlint assumes unlimited width and demands single-line collapses that
-# detekt then rejects.
 
 root = true
 
+# One line length for the whole repo, set here and nowhere else: 120
+# (CLAUDE.md §3). Editors (IntelliJ / Android Studio, Xcode, VS Code) read
+# max_line_length for their margin guide and hard wrap; ktlint enforces it and
+# `mise run format` wraps signatures and argument lists that pass it. detekt's
+# MaxLineLength is off so nothing holds a second copy of the number
+# (LESSONS D-009).
 [*]
 charset = utf-8
 end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
-
-[*.{kt,kts}]
+indent_style = space
 indent_size = 4
 max_line_length = 120
-ktlint_code_style = official
+
+[*.{yml,yaml,json,json5}]
+indent_size = 2
+
+# Xcode writes plists with tabs.
+[*.plist]
+indent_style = tab
+
+# Windows needs CRLF in the Gradle wrapper script.
+[*.bat]
+end_of_line = crlf
+
+[*.{kt,kts}]
+ktlint_code_style = ktlint_official
+# ktlint_official forces a multiline class header at >= 1 constructor parameter
+# and a multiline function signature at >= 2 parameters, regardless of length.
+# Unset both so a declaration wraps only when it passes 120.
+ktlint_class_signature_rule_force_multiline_when_parameter_count_greater_or_equal_than = unset
+ktlint_function_signature_rule_force_multiline_when_parameter_count_greater_or_equal_than = unset

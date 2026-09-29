@@ -26,13 +26,11 @@ Rules for working in this repo. Read before starting any task.
 
 Use the **latest stable**. Never EAP, RC, or beta on `main`. All versions live in `gradle/libs.versions.toml`.
 
-Floors as of last edit:
-
-- Kotlin 2.3.21
-- Gradle 9.x
-- AGP 9.x with `com.android.kotlin.multiplatform.library` (use the new `android` block, not `androidTarget`)
-- JVM target 21
-- Latest stable Xcode that the current Kotlin release supports
+- Kotlin, SKIE, Gradle, AGP: whatever the catalog (and `gradle/wrapper/gradle-wrapper.properties`) says — read them there rather than trusting a number quoted in prose. The Kotlin pin is bounded above by SKIE (Section 8).
+- AGP 9.x with `com.android.kotlin.multiplatform.library` (use the new `android` block, not `androidTarget`).
+- JVM bytecode target 21 — the catalog's `jvm-target`, set explicitly on the android + jvm targets by the convention plugin, never inherited from the build JDK (LESSONS B-003). Build JDK 21 (mise) — not 25 until detekt 2.x is stable (LESSONS T-003).
+- Android consumers compile against at least `android-min-compile-sdk` — the AAR's declared `minCompileSdk` (LESSONS B-002) — not our `compileSdk`, which the sample's AndroidX deps set.
+- Latest stable Xcode that the current Kotlin release supports.
 
 **Before adding or bumping any dependency: web-search the latest stable version.** Versions in your training data are stale. Don't guess.
 
@@ -73,6 +71,7 @@ Everything else we author — classes, files, top-level functions, top-level `va
 - `kotlinx.coroutines` only. Every `CoroutineScope` has a clear owner with a defined cancellation lifecycle. The library's per-platform schedulers and the iOS coroutine bridge each own a `SupervisorJob`-rooted scope; `Backgrounder.shutdown()` is the documented cancellation handle. There are no top-level scopes.
 - No `GlobalScope`. Ever.
 - `Flow`/`StateFlow`/`SharedFlow` over callbacks and `LiveData`.
+- Expose state with an **explicit backing field** (stable since Kotlin 2.4), not a `_state`/`state` pair: `val state: StateFlow<S>` + `field = MutableStateFlow(initial)` on the next line; inside the class `state.value = …` smart-casts to the mutable type. Swift sees only the read-only `StateFlow` (SKIE: `SkieKotlinStateFlow`); the mutable field never reaches the public API or its dump.
 - For shared mutable state guarded **across `suspend` boundaries**, use `kotlinx.coroutines.sync.Mutex` or actor-style coroutines.
 - For short, **non-suspending** critical sections (e.g., a couple of map operations), use `kotlinx.atomicfu.locks.synchronized` with a `kotlinx.atomicfu.locks.SynchronizedObject`. It's the KMP-portable equivalent of a JVM monitor — lowers to a `synchronized` block on JVM, an internal lock on K/N. Single-flag state belongs in `kotlinx.atomicfu.atomic` instead.
 - **Never** `kotlin.synchronized` (JVM-only), `java.util.concurrent.locks.*`, `@Synchronized`, `volatile`, or `Object.wait/notify`. None are portable to K/N or wasm.
@@ -84,20 +83,22 @@ Everything else we author — classes, files, top-level functions, top-level `va
 ## 4. Module layout
 
 ```
-/shared               headless KMP module — business logic only
+/reachable            headless KMP library (published) — business logic only
   /src/commonMain
+  /src/appleMain      iOS + macOS shared (Network.framework)
   /src/androidMain
-  /src/iosMain
-  /src/macosMain
   /src/jvmMain        desktop / server JVM
-  /src/wasmJsMain     stretch
-/apps/ios             Xcode project, native SwiftUI, consumes /shared via SPM
-/apps/android         Android entrypoint, native Jetpack Compose UI
+  /api                committed public-API / ABI dumps (Section 10)
+/reachable-testing    published test fakes (FakeReachability, withFakeReachability)
+/gradle/plugins       convention plugins: reachable.kmp-library, reachable.publish
+/apps/ios             Xcode project, native SwiftUI, consumes /Package.swift via SPM
+/apps/android         Android entrypoint, native Jetpack Compose UI (:androidApp)
 /apps/macos           macOS desktop, native SwiftUI/AppKit
-/webApp               native web (stretch)
 ```
 
-`applyDefaultHierarchyTemplate()`. Don't hand-roll source set wiring.
+Source sets come from Kotlin's **default hierarchy template**, applied implicitly — no `applyDefaultHierarchyTemplate { }` block: commonMain → nativeMain → `appleMain` → `iosMain` / `macosMain`, plus `androidMain` and `jvmMain`. Code in `appleMain` must compile on **both** iOS and macOS (Foundation / Network); iOS-only code (UIKit) goes in `iosMain`. Don't hand-roll source-set wiring — any manual `dependsOn()` edge disables the template (LESSONS B-005). A `wasmJs` target, when it comes, slots into the same template.
+
+Module shape lives in the `reachable.kmp-library` convention plugin: framework base name and namespace are DERIVED from the module name (`reachable` → framework `ReachableKit`, namespace `com.happycodelucky.reachable`). Adding a module = apply `reachable.kmp-library` + `reachable.publish`.
 
 `expect`/`actual` surface stays minimal. If an `actual` is more than ~20 lines, refactor to an interface in `commonMain` with platform implementations injected at the entrypoint.
 
@@ -309,23 +310,28 @@ Two channels, no overlap:
 - **Maven Central** (vanniktech `gradle-maven-publish-plugin`) — Android AAR, `kotlinMultiplatform` metadata, per-target klibs. For Gradle/KMP consumers. No XCFramework involved.
 - **GitHub Releases** (KMMBridge) — the SKIE-enhanced `XCFramework` zip for pure-Swift SPM consumers.
 
+**llms.txt for AI tools:** every published jar and the AAR carry `llms.txt` + `llms-full.txt` (the module's public API with KDoc, from Dokka Markdown) under `META-INF/com.happycodelucky.reachable/<artifactId>/`, packed by any publishing build (LESSONS D-011). `mise run llms:generate` previews them; `mise run llms:check` verifies a local publish (CI's Apple leg runs it). The docs site serves its own pair.
+
 **SPM pipeline (release workflow, real publishes only):**
 
 1. Gradle builds an `XCFramework` with `iosArm64` + `iosSimulatorArm64` + `macosArm64` slices. No x86. SKIE-enhanced.
 2. KMMBridge zips the `XCFramework` and **uploads it as a GitHub Release asset** on the `vX.Y.Z` release it creates. GitHub *Releases*, not GitHub *Packages* — Packages requires a PAT even to download from public repos; Release assets are public and unauthenticated.
-3. KMMBridge regenerates the root `Package.swift` referencing the asset by URL + sha256 checksum. The workflow rewrites KMMBridge's API asset URL to the public `releases/download/…` form (same bytes, no anonymous-API quota), commits `Package.swift` to `main`, and force-moves the version tag onto that commit so the tagged manifest matches the uploaded binary.
+3. KMMBridge regenerates the root `Package.swift` referencing the asset by URL + sha256 checksum. The workflow rewrites KMMBridge's API asset URL to the public `releases/download/…` form (same bytes, no anonymous-API quota), commits `Package.swift` on a detached **release commit**, and force-moves the version tag onto it so the tagged manifest matches the uploaded binary. That commit lives **only on the tag** — `main` is branch-protected and keeps the local-dev `Package.swift` (LESSONS D-007).
 4. Swift consumers add this repo's URL as an SPM dependency pinned to a version tag; the tagged `Package.swift` hands them the prebuilt binary.
 
 **Rules:**
 
 - KMMBridge config lives in the `kmmbridge { }` block in `reachable/build.gradle.kts`; the version pin lives in `gradle/libs.versions.toml` like every other dependency.
-- Versioning: the release workflow computes the version and passes `-Pversion=X.Y.Z`; KMMBridge tags `v${version}`. KMMBridge's own timestamp versioning is not used.
+- The framework / Swift module is `ReachableKit` (`<Name>Kit`), so it never shares a name with a public type — SKIE would rename the type in Swift (LESSONS D-008). The convention plugin derives it; KMMBridge's `frameworkName` must match. Renaming it breaks every Swift consumer's `import`.
+- Versioning: the release workflow passes `-Pversion=X.Y.Z` — `gradle.properties`' version, or a pre-release's — and KMMBridge tags `v${version}`. KMMBridge's own timestamp versioning is not used.
 - Publishing is CI-only: the `kmmBridgePublish` task only exists when `-PENABLE_PUBLISHING=true` is passed (the release workflow does).
 - Swift engineers never open a Gradle file. They `swift package update` and consume tagged versions.
 - Don't vendor `XCFramework` zips into the repo. Everything flows through GitHub Release assets + the committed `Package.swift`.
-- `Package.swift` is generated (`kmmBridgePublish` writes the released form, `spmDevBuild` the local-dev form). Don't hand-edit it, and never commit the local-dev form.
+- `Package.swift` on `main` is the committed local-dev form (a `.binaryTarget(path:)` at the debug XCFramework). `kmmBridgePublish` writes the released form onto each tag's release commit, and `spmDevBuild` rewrites it for local development — never commit either rewrite (`mise run spm:restore`).
 
-**Local development override:** the sample apps consume the root `Package.swift` as a local package. Run `./gradlew :reachable:spmDevBuild` (`mise run spm:dev`) to rebuild the debug `XCFramework` and flip `Package.swift` to a local path; `mise run spm:restore` restores the committed version. Documented in `apps/ios/README.md`.
+**Local development override:** the sample apps consume the root `Package.swift` as a local package. Run `./gradlew :reachable:spmDevBuild` (`mise run spm:dev`) to rebuild the debug `XCFramework` and flip `Package.swift` to KMMBridge's local form; `mise run spm:restore` restores the committed version. Documented in `apps/ios/README.md`.
+
+**Releases are changeset-driven** (`.changeset/README.md`, `.github/PUBLISHING.md`; LESSONS D-006). Every PR that reaches consumers adds a changeset (`mise run changeset`: `title`, `change: major|minor|patch`, `description`, then the full note in place of its Unfilled callout); the Changeset PR check enforces it for any PR that changes a file in release scope — `include`/`exclude` globs in `.changeset/config.toml` (label `no-changeset` to opt out). A changeset's `change` is the source of truth for the version — the author's call, which neither the PR nor tooling overrides. Merges to `main` keep one rolling **Release vX.Y.Z** PR up to date — it bumps `version=` in `gradle.properties` (the single source of the version), rewrites every `x-release-version`-marked copy, and writes `docs/changelog.md`. Merging it runs `.github/workflows/release.yml`, which publishes exactly that version to Maven Central and GitHub Releases, then deploys the docs site. While 0.x a `major` change bumps the minor; `version: X.Y.Z` in a changeset pins the version (the way to 1.0.0). Never edit `version=` by hand. Pre-releases and retries: dispatch `release.yml` with a `version` (e.g. `0.15.0-rc.1`), or `mise run publish:maven` by hand. `mise run publish:local` installs the next `X.Y.Z-SNAPSHOT` to `~/.m2` — never the released version, which would shadow Central's.
 
 ---
 
@@ -363,11 +369,15 @@ When starting any task:
 4. Considering a hand-written replacement? Section 6 process. Default answer is "use the library."
 5. Adding a public API consumed from Swift? Apply Section 8 rules at design time, not after.
 6. Changed the public API on purpose? `mise run api:dump` and commit the `api/` diff alongside the code (Section 10) — otherwise `check` fails on the surface change.
-7. Done means: `mise run check` passes and `./gradlew :reachable:linkDebugFrameworkIosArm64` builds clean.
-8. Opting into experimental APIs? One-line comment explaining what's experimental and the rollback path.
-9. Wasm gap? `// TODO(wasm)` and ship Tier 1.
-10. Stuck? Grep `.claude/lessons/LESSONS.md`.
-11. Learned something? Add to `.claude/lessons/LESSONS.md` immediately.
+7. Add a changeset (`mise run changeset`, Section 9) when the change reaches consumers, and replace its Unfilled callout with the release note. Its `change` level is the version decision; the PR's "Type of change" only restates it. The usual reading — removed/renamed public API is `major` (even while 0.x), new API `minor`, a fix `patch` — is a default, not a rule: a different level is the author's call (say why in the body). Docs/CI/test-only PRs are out of release scope and need none (`mise run changeset:scope`); label an in-scope PR that still reaches no consumer `no-changeset`.
+8. Done means: `mise run check` passes and `./gradlew :reachable:linkDebugFrameworkIosArm64` builds clean. `check` never builds the Android sample — `mise run build:samples` does (CI's fast leg runs it); it's what catches AndroidX compileSdk floors (LESSONS B-004).
+9. Opting into experimental APIs? One-line comment explaining what's experimental and the rollback path.
+10. Wasm gap? `// TODO(wasm)` and ship Tier 1.
+11. Stuck? Grep `.claude/lessons/LESSONS.md`.
+12. Learned something? Add to `.claude/lessons/LESSONS.md` immediately.
+13. Opening a PR or filing an issue? GitHub applies the templates only in its web UI — `gh … create --body` skips them — so build the body from them yourself and pass it with `--body-file` (LESSONS B-006):
+    - **PR:** start from `.github/PULL_REQUEST_TEMPLATE.md`. Follow each `<!-- AI: … -->` comment, replace every `Unfilled` callout (none may remain), prune each choice list to the lines that apply, and tick a done-gate box only for what you actually ran or checked. Keep "AI-authored" under AI assistance, name the tool + model, and open with `--draft` — a human marking it ready is the review sign-off (LESSONS B-007).
+    - **Issue:** read the matching form in `.github/ISSUE_TEMPLATE/`. Write each field's `label` as a `### ` heading in form order, with `_No response_` under a skipped optional field — the exact shape the web form produces. Use its `title:` prefix and `labels:` (drop any the repo lacks — `gh` rejects them). Tick a required checkbox only if it's true (e.g. search with `gh issue list --search` first).
 
 ---
 
@@ -384,5 +394,5 @@ When starting any task:
 - No EAP/RC/beta on `main`.
 - No callback-based public APIs in `commonMain`.
 - No UI dependencies in `/shared`.
-- No hand-edited `Package.swift`.
+- No committed `spmDevBuild` / `kmmBridgePublish` rewrite of `Package.swift` — `main` holds the local-dev form, tags hold the released form.
 - No vendored `XCFramework` in the iOS repo.

@@ -14,15 +14,15 @@ plugins {
     id("reachable.kmp-library")
     id("reachable.publish")
     // KMMBridge (CLAUDE.md §9): aggregates the per-target frameworks the
-    // convention plugin declared into `Reachable.xcframework`
+    // convention plugin declared into `ReachableKit.xcframework`
     // (build/XCFrameworks/{debug,release}/), publishes the release zip as a
     // GitHub Release asset, and regenerates the root /Package.swift. The
     // `.github` plugin variant is a superset of the core plugin in 1.2.x —
     // applying both produces a duplicate-extension error, so only this one.
     //
-    // Do NOT redeclare `XCFramework("Reachable")` in the kotlin { } block:
+    // Do NOT redeclare `XCFramework("ReachableKit")` in the kotlin { } block:
     // KMMBridge auto-creates the aggregator from the framework binaries at
-    // config time (it provides `assembleReachable{Debug,Release}XCFramework`),
+    // config time (it provides `assembleReachableKit{Debug,Release}XCFramework`),
     // and a second declaration collides on those task names.
     alias(libs.plugins.kmmbridge.github)
 }
@@ -87,7 +87,7 @@ skie {
 //   1. Maven Central (`reachable.publish` convention plugin) — Android AAR,
 //      `kotlinMultiplatform` metadata, and per-target klibs. KMP consumers
 //      resolve these from `commonMain`; no XCFramework involved.
-//   2. GitHub Releases (this block) — the SKIE-enhanced `Reachable.xcframework`
+//   2. GitHub Releases (this block) — the SKIE-enhanced `ReachableKit.xcframework`
 //      zip for pure-Swift consumers, referenced from the root /Package.swift
 //      by URL + checksum so `swift package resolve` needs no local Gradle
 //      build and no authentication.
@@ -99,7 +99,7 @@ skie {
 // the freshly-pushed tag referencing a URL that doesn't resolve yet.
 // Release assets are public, immediate, and checksum-pinned by SPM.
 //
-// `gitHubReleaseArtifacts` uploads `Reachable.xcframework.zip` to the GitHub
+// `gitHubReleaseArtifacts` uploads `ReachableKit.xcframework.zip` to the GitHub
 // Release tagged `v${project.version}`, creating the release if it doesn't
 // exist. (`releasString` [sic] is KMMBridge 1.2.x's parameter name; without
 // it the release tag would be the bare version, breaking the repo's `vX.Y.Z`
@@ -115,7 +115,7 @@ kmmbridge {
     // The XCFramework's Swift module name. Must match the `baseName` the
     // convention plugin sets on each framework binary, or the generated
     // Package.swift references a binary that doesn't exist.
-    frameworkName.set("Reachable")
+    frameworkName.set("ReachableKit")
 
     // `swiftToolVersion = "6.0"` because the platform constants `.iOS(.v18)`
     // and `.macOS(.v15)` need PackageDescription 6.0; KMMBridge defaults to

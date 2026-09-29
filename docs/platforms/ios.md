@@ -10,7 +10,7 @@ macOS; both Apple platforms share the `appleMain` source set in
 The recommended way to access reachability from Swift on iOS or iPadOS:
 
 ```swift
-import Reachable
+import ReachableKit
 
 let reachability: any Reachability = Reachability.shared
 ```
@@ -31,7 +31,7 @@ singleton's lifetime is the process.
 For tests or per-feature observers:
 
 ```swift
-import Reachable
+import ReachableKit
 
 let reachability: any Reachability = Reachability()
 ```

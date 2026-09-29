@@ -24,12 +24,11 @@ plugins {
 
 allprojects {
     group = "com.happycodelucky.reachable"
-    // The in-tree version carries `-SNAPSHOT` and a `0` patch slot. Humans bump
-    // major/minor here and commit the change; the patch slot stays `0`. CI
-    // overrides this at build time via `-Pversion=...` to stamp ephemeral
-    // patches (run numbers for CI builds, exact `vX.Y.Z` for releases) without
-    // ever committing the override back.
-    version = providers.gradleProperty("version").getOrElse("0.1.0-SNAPSHOT")
+    // `version` lives in gradle.properties: the last version released from
+    // main, bumped only by the release PR (scripts/changeset.py). CI stamps
+    // non-release builds with `-Pversion=…-ci.N`; a pre-release passes its own
+    // `-Pversion`. Nothing ever writes an override back.
+    version = providers.gradleProperty("version").get()
 }
 
 subprojects {
@@ -48,7 +47,7 @@ subprojects {
 
     plugins.withId("org.jlleitschuh.gradle.ktlint") {
         configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-            version.set(libs.versions.ktlint.get())
+            version.set(libs.versions.ktlint.cli.get())
             android.set(false)
             outputToConsole.set(true)
             ignoreFailures.set(false)
@@ -67,6 +66,8 @@ subprojects {
     plugins.withId("io.gitlab.arturbosch.detekt") {
         configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
             buildUponDefaultConfig = true
+            // Project overrides layered on the defaults live in config/detekt.
+            config.setFrom(rootProject.files("config/detekt/detekt.yml"))
             // detekt's default source resolution only knows JVM layouts
             // (src/main/kotlin); point it at the module root so every KMP
             // source set (commonMain, appleMain, androidHostTest, …) is

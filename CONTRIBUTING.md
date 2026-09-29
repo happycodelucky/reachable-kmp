@@ -7,7 +7,7 @@
 [`mise`](https://mise.jdx.dev) pins every non-Gradle build dep: JDK, the
 Gradle bootstrap binary, Python (for the docs toolchain), `xcodegen`, `gh`,
 `swiftlint`, and `swiftformat`. Versions live in
-[`/mise.toml`](https://github.com/happycodelucky/reachable/blob/main/mise.toml)
+[`/mise.toml`](https://github.com/happycodelucky/reachable-kmp/blob/main/mise.toml)
 and match what CI runs.
 
 ```bash
@@ -25,8 +25,9 @@ invocations still work; mise just ensures everyone runs the same versions.
 - Latest stable Xcode that the pinned SKIE version supports — see
   [SKIE releases](https://github.com/touchlab/SKIE/releases). Xcode is
   not managed by mise; install it yourself.
-- Android SDK with command-line tools; `local.properties` should set
-  `sdk.dir`.
+- Android SDK with command-line tools; `local.properties` (gitignored) sets
+  `sdk.dir` — `cp local.properties.example local.properties` and edit it. A
+  git worktree doesn't carry it over; copy it in there too.
 
 A few binding repo conventions worth knowing before you open a PR:
 Kotlin-first dependencies, ARM-only targets, SKIE for the Swift surface,
@@ -35,7 +36,7 @@ Maven Central publishing, and the Apple platform-name casing rule
 
 ## Reporting a bug
 
-Open an issue with:
+Open an issue with the **Bug report** form. It asks for:
 
 1. Platform (iOS / iPadOS / macOS / Android), OS version, device or simulator.
 2. The reachability state when the bug reproduces (Wi-Fi, cellular, captive
@@ -57,7 +58,7 @@ mise run check          # ktlint, detekt, and every unit test in both published
                         # modules (iOS sim, macOS, Android host)
 mise run build:ios      # iOS device and Apple Silicon simulator debug frameworks
 mise run build:macos    # macOS desktop debug framework
-mise run build          # release Reachable.xcframework (SPM-consumable)
+mise run build          # release ReachableKit.xcframework (SPM-consumable)
 mise run build:android  # Android AAR
 
 # Raw Gradle equivalents, for reference:
@@ -65,14 +66,14 @@ mise run build:android  # Android AAR
 ./gradlew :reachable:linkDebugFrameworkIosArm64
 ./gradlew :reachable:linkDebugFrameworkIosSimulatorArm64
 ./gradlew :reachable:linkDebugFrameworkMacosArm64
-./gradlew :reachable:assembleReachableXCFramework
+./gradlew :reachable:assembleReachableKitXCFramework
 ./gradlew :reachable:assemble
 ./gradlew :androidApp:assembleDebug   # project is under apps/android
 ```
 
 For the iOS and macOS samples, `mise run open:ios` (and `open:macos`) chains
 `spm:dev` → `xcodegen` → opens the project in Xcode. See
-[apps/ios/README.md](https://github.com/happycodelucky/reachable/blob/main/apps/ios/README.md)
+[apps/ios/README.md](https://github.com/happycodelucky/reachable-kmp/blob/main/apps/ios/README.md)
 and `apps/macos/README.md` for the iteration loop.
 
 ## Building the docs
@@ -96,14 +97,29 @@ from the site navigation, every recipe has at least one code block.
 - New behavior has a test in `commonTest` or the relevant platform test
   source set.
 - `mkdocs build --strict` and `docs/check.py` pass if docs changed.
+- Does the change reach consumers? Add a changeset — `mise run changeset` —
+  and replace its *Unfilled* callout with the release note (see
+  [`.changeset/README.md`](.changeset/README.md)). Its `change` level decides
+  the version; the PR's *Type of change* just restates it.
+- Fill in the PR template. Sections holding an *Unfilled* callout (Summary,
+  Open questions, How it was verified) are required. Agent-authored PRs open
+  as drafts and say so under *AI assistance*; marking one ready for review
+  means a human has reviewed it (CLAUDE.md §12).
 - The PR title and body explain the *why*; the diff shows the *what*.
 
-CI runs the full pipeline (build, test, XCFramework assembly, docs build,
-docs validation) on every PR.
+CI runs the full pipeline on every PR: lint, JVM + Android tests and the
+Android sample build on Ubuntu; the full `check` (Apple tests + ABI check)
+and XCFramework assembly on macOS; the docs build and validation. The
+**Changeset** check fails a PR that changes a file in release scope
+(`.changeset/config.toml` — the published modules and build logic, not docs,
+CI, tests or samples) and adds no `.changeset/*.md`; if it still reaches no
+consumer, label it `no-changeset` instead.
 
 ## Releasing
 
-Releases publish to Maven Central via vanniktech maven-publish, then tag
-the commit and create a GitHub Release with auto-generated notes. The
-mechanics, one-time credential setup, and the dry-run / live-publish
-toggle live in [`.github/PUBLISHING.md`](.github/PUBLISHING.md).
+Releases come from the changesets. Merges to `main` keep a **Release vX.Y.Z**
+PR open with the computed version and changelog; merging it publishes to
+Maven Central and GitHub Releases (SPM) and deploys the docs site.
+Pre-releases and retries are manual runs of the Release workflow. Don't
+hand-edit `version=` in `gradle.properties`. The mechanics and one-time
+credential setup live in [`.github/PUBLISHING.md`](.github/PUBLISHING.md).

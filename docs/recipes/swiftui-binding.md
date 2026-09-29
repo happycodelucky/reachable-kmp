@@ -11,7 +11,7 @@ no `deinit` close needed:
 
 ```swift
 import SwiftUI
-import Reachable
+import ReachableKit
 
 @MainActor
 final class ConnectivityModel: ObservableObject {
@@ -50,7 +50,7 @@ For tests or when you need a fresh observer with explicit teardown:
 
 ```swift
 import SwiftUI
-import Reachable
+import ReachableKit
 
 @MainActor
 final class ConnectivityModel: ObservableObject {

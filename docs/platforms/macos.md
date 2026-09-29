@@ -8,7 +8,7 @@ implementation walk-through; this page covers the macOS-specific deltas.
 ## Singleton entry point — `Reachability.shared`
 
 ```swift
-import Reachable
+import ReachableKit
 
 let reachability: any Reachability = Reachability.shared
 ```
@@ -22,7 +22,7 @@ an `nw_path_monitor`-backed observer and starts it eagerly. Calling
 ## Explicit-lifecycle factory
 
 ```swift
-import Reachable
+import ReachableKit
 
 let reachability: any Reachability = Reachability()
 ```

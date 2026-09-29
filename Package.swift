@@ -1,17 +1,21 @@
 // swift-tools-version:6.0
 import PackageDescription
 
-// BEGIN KMMBRIDGE VARIABLES BLOCK (do not edit)
-let remoteKotlinUrl = "https://github.com/happycodelucky/reachable/releases/download/v0.14.0/Reachable.xcframework.zip"
-let remoteKotlinChecksum = "29eb78fc798e59267e4ea4a5d0c23c569d96d250b5baa0c0dc701a9ac0e9ec48"
-let packageName = "Reachable"
-// END KMMBRIDGE BLOCK
+// ReachableKit is the XCFramework's Swift module name (the :reachable module +
+// "Kit"). This committed form points at the debug XCFramework Gradle builds, and
+// stays that way on main. Each release tags a commit whose Package.swift is the
+// remote `.binaryTarget(url:checksum:)` for that version's GitHub Release asset
+// — SPM consumers pin a tag and get that form (.github/PUBLISHING.md).
+//
+//   mise run spm:dev      — rebuild the debug XCFramework + point this file at it
+//   mise run spm:restore  — restore the committed form
+let packageName = "ReachableKit"
 
 let package = Package(
     name: packageName,
     platforms: [
         .iOS(.v18),
-.macOS(.v15)
+        .macOS(.v15),
     ],
     products: [
         .library(
@@ -22,9 +26,7 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: packageName,
-            url: remoteKotlinUrl,
-            checksum: remoteKotlinChecksum
-        )
-        ,
+            path: "./reachable/build/XCFrameworks/debug/ReachableKit.xcframework"
+        ),
     ]
 )

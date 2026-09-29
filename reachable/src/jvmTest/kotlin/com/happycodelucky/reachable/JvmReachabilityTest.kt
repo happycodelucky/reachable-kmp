@@ -31,25 +31,21 @@ class JvmReachabilityTest {
     private val wired =
         ReachabilityStatus(isReachable = true, transport = Transport.Ethernet, isDataMetered = false)
 
-    private fun iface(
-        name: String,
-        isUp: Boolean = true,
-    ) = JvmNetworkInterface(
-        name = name,
-        displayName = name,
-        isUp = isUp,
-        isLoopback = false,
-        hasRoutableAddress = true,
-    )
+    private fun iface(name: String, isUp: Boolean = true) =
+        JvmNetworkInterface(
+            name = name,
+            displayName = name,
+            isUp = isUp,
+            isLoopback = false,
+            hasRoutableAddress = true,
+        )
 
     /**
      * Scripted stand-in for [systemNetworkInterfaces]. AtomicReference (not a
      * plain `var`) because the poll loop reads from a Dispatchers.Default
      * thread while the test thread writes.
      */
-    private class ScriptedInterfaces(
-        initial: List<JvmNetworkInterface>,
-    ) : () -> List<JvmNetworkInterface> {
+    private class ScriptedInterfaces(initial: List<JvmNetworkInterface>) : () -> List<JvmNetworkInterface> {
         private val current = AtomicReference(initial)
 
         fun set(next: List<JvmNetworkInterface>) = current.set(next)

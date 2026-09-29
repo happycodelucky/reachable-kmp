@@ -5,9 +5,9 @@
 ![Android 11+](https://img.shields.io/badge/Android-11%2B-3DDC84.svg?style=for-the-badge&logo=android&logoColor=white)
 ![JVM 21+](https://img.shields.io/badge/JVM-21%2B-ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white)
 ![Kotlin 2.3](https://img.shields.io/badge/Kotlin-2.3-7F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)
-[![CI](https://img.shields.io/github/actions/workflow/status/happycodelucky/reachable/ci.yml?style=for-the-badge&label=ci)](https://github.com/happycodelucky/reachable/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/github/actions/workflow/status/happycodelucky/reachable/docs.yml?style=for-the-badge&label=docs)](https://github.com/happycodelucky/reachable/actions/workflows/docs.yml)
-[![Release](https://img.shields.io/github/v/release/happycodelucky/reachable?style=for-the-badge)](https://github.com/happycodelucky/reachable/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/happycodelucky/reachable-kmp/ci.yml?style=for-the-badge&label=ci)](https://github.com/happycodelucky/reachable-kmp/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/github/actions/workflow/status/happycodelucky/reachable-kmp/docs.yml?style=for-the-badge&label=docs)](https://github.com/happycodelucky/reachable-kmp/actions/workflows/docs.yml)
+[![Release](https://img.shields.io/github/v/release/happycodelucky/reachable-kmp?style=for-the-badge)](https://github.com/happycodelucky/reachable-kmp/releases/latest)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge)](./LICENSE)
 
 A Kotlin Multiplatform library that tells you whether the device is on the
@@ -45,7 +45,7 @@ become exhaustive Swift enums, `StateFlow<T>` becomes `AsyncSequence<T>`,
 ## Documentation
 
 The full mkdocs site is published to
-[happycodelucky.github.io/reachable](https://happycodelucky.github.io/reachable/).
+[happycodelucky.github.io/reachable-kmp](https://happycodelucky.github.io/reachable-kmp/).
 Highlights:
 
 - [Getting started](docs/getting-started.md): three steps from install to
@@ -74,41 +74,47 @@ depend on `:reachable` from `commonMain` — KMP resolves the right per-target
 slice (Android AAR, JVM jar, `iosArm64`, `iosSimulatorArm64`, `macosArm64`)
 for you:
 
+<!-- x-release-version-start -->
 ```kotlin
 // shared/build.gradle.kts
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("com.happycodelucky.reachable:reachable:0.12.11")
+            implementation("com.happycodelucky.reachable:reachable:0.14.0")
         }
     }
 }
 ```
+<!-- x-release-version-end -->
 
 Android-only and JVM-only consumers depend on the artifact directly:
 
+<!-- x-release-version-start -->
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("com.happycodelucky.reachable:reachable:0.12.11")
+    implementation("com.happycodelucky.reachable:reachable:0.14.0")
 }
 ```
+<!-- x-release-version-end -->
 
 Pure-Swift apps (no Kotlin toolchain) consume Reachable via Swift Package
-Manager instead — a prebuilt, SKIE-enhanced `Reachable.xcframework` attached
+Manager instead — a prebuilt, SKIE-enhanced `ReachableKit.xcframework` attached
 to each GitHub Release:
 
+<!-- x-release-version-start -->
 ```swift
 // Package.swift — or Xcode: File → Add Package Dependencies…
 dependencies: [
-    .package(url: "https://github.com/happycodelucky/reachable.git", from: "0.12.11"),
+    .package(url: "https://github.com/happycodelucky/reachable-kmp.git", from: "0.14.0"),
 ]
 ```
+<!-- x-release-version-end -->
 
 A companion `reachable-testing` artifact ships `FakeReachability` and the
 `withFakeReachability { }` helper — add it as a test dependency at the same
 version (Maven Central only; no SPM distribution). See the
-[Installation guide](https://happycodelucky.github.io/reachable/installation/)
+[Installation guide](https://happycodelucky.github.io/reachable-kmp/installation/)
 for platform floors, the testing artifact, and the local-development
 override.
 
@@ -157,7 +163,7 @@ The same `appleMain` factory covers all three platforms. Use
 `Reachability.shared` for zero-setup access:
 
 ```swift
-import Reachable
+import ReachableKit
 
 @MainActor
 @Observable
@@ -377,7 +383,7 @@ Then the task surface:
 mise run check          # ktlint + all unit tests (iOS sim, macOS, Android host, JVM)
 mise run build:ios      # iOS device + simulator debug frameworks
 mise run build:macos    # macOS desktop debug framework
-mise run build          # release Reachable.xcframework (sample-app local SPM)
+mise run build          # release ReachableKit.xcframework (sample-app local SPM)
 mise run build:android  # Android AAR
 mise run open:ios       # spm:dev + xcodegen + open apps/ios in Xcode
 mise run open:macos     # spm:dev + xcodegen + open apps/macos in Xcode

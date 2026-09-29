@@ -9,9 +9,9 @@
 
 site_name: Reachable
 site_description: A small Kotlin Multiplatform reachability library.
-site_url: https://happycodelucky.github.io/reachable/
-repo_name: happycodelucky/reachable
-repo_url: https://github.com/happycodelucky/reachable
+site_url: https://happycodelucky.github.io/reachable-kmp/
+repo_name: happycodelucky/reachable-kmp
+repo_url: https://github.com/happycodelucky/reachable-kmp
 edit_uri: edit/main/docs/
 copyright: Copyright &copy; 2026 Paul Bates
 
@@ -95,11 +95,32 @@ plugins:
   # pins in install snippets stay in lockstep with the actual release.
   - macros:
       module_name: main
+  # llms.txt (https://llmstxt.org): an index of the site at /llms.txt, plus
+  # /llms-full.txt with every listed page inlined. Built from the rendered
+  # pages (macros already applied), so it never goes stale; not committed
+  # anywhere. A new page goes in `nav:` AND in a section here.
+  - llmstxt:
+      full_output: llms-full.txt
+      sections:
+        Getting started:
+          - index.md
+          - getting-started.md
+          - installation.md
+        Concepts:
+          - concepts/*.md
+        Recipes:
+          - recipes/*.md
+        Platforms:
+          - platforms/*.md
+        API reference:
+          - reference.md
+        Optional:
+          - changelog.md: Every release, newest first
 
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/happycodelucky/reachable
+      link: https://github.com/happycodelucky/reachable-kmp
 
 # Explicit nav — never auto-discovered. Page ordering matters; this file is the truth.
 nav:
@@ -120,6 +141,7 @@ nav:
     - platforms/macos.md
     - platforms/android.md
     - platforms/jvm.md
+  - API reference: reference.md
   - Changelog: changelog.md
 
 # Strict mode: fail the build on a broken link or a dead anchor.
