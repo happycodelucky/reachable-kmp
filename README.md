@@ -80,7 +80,7 @@ for you:
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("com.happycodelucky.reachable:reachable:0.14.0")
+            implementation("com.happycodelucky.reachable:reachable:0.15.0")
         }
     }
 }
@@ -93,7 +93,7 @@ Android-only and JVM-only consumers depend on the artifact directly:
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("com.happycodelucky.reachable:reachable:0.14.0")
+    implementation("com.happycodelucky.reachable:reachable:0.15.0")
 }
 ```
 <!-- x-release-version-end -->
@@ -106,7 +106,7 @@ to each GitHub Release:
 ```swift
 // Package.swift — or Xcode: File → Add Package Dependencies…
 dependencies: [
-    .package(url: "https://github.com/happycodelucky/reachable-kmp.git", from: "0.14.0"),
+    .package(url: "https://github.com/happycodelucky/reachable-kmp.git", from: "0.15.0"),
 ]
 ```
 <!-- x-release-version-end -->
